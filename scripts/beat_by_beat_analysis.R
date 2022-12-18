@@ -8,10 +8,10 @@ library(scales)
 library(ggthemes)
 library(Metrics)
 
-data <- read.csv("r2plus1d_18_32_2_pretrained_test_predictions.csv", header = FALSE)
+data <- read.csv("test_predictions.csv", header = FALSE)
 str(data)
 
-
+data$V1 <- substr(data$V1,1,nchar(data$V1)-4)
 dataNoAugmentation <- data[data$V2 == 0,]
 str(dataNoAugmentation)
 
@@ -21,6 +21,7 @@ str(dataGlobalAugmentation)
 
 
 sizeData <- read.csv("size.csv")
+sizeData$Filename <- substr(sizeData$Filename,1,nchar(sizeData$Filename)-4)
 sizeData <- sizeData[sizeData$ComputerSmall == 1,]
 str(sizeData)
 
@@ -28,20 +29,23 @@ sizeRelevantFrames <- sizeData[c(1,2)]
 sizeRelevantFrames$Frame <- sizeRelevantFrames$Frame - 32
 sizeRelevantFrames[sizeRelevantFrames$Frame < 0,]$Frame <- 0
 
-
+str(data)
 beatByBeat <- merge(sizeRelevantFrames, data, by.x = c("Filename", "Frame"), by.y = c("V1", "V2"))
+str(beatByBeat)
+
 beatByBeat <- beatByBeat %>% group_by(Filename) %>% summarize(meanPrediction = mean(V3), sdPred = sd(V3))
 str(beatByBeat)
 
 ### For use, need to specify file directory
-fileLocation <- "/Users/davidouyang/Local Medical Data/"
-ActualNumbers <- read.csv(paste0(fileLocation, "FileList.csv", sep = ""))
+fileLocation <- "/Users/Documents/dynamic/a4c-video-dir/"
+ActualNumbers <- read.csv("FileList.csv", header=T, quote='\"', 
+                          colClasses = c("character", "numeric", "numeric","numeric","numeric","numeric","numeric","numeric", "character"))
 ActualNumbers <- ActualNumbers[c(1,2)]
 str(ActualNumbers)
 
-
-
+str(dataNoAugmentation)
 dataNoAugmentation <- merge(dataNoAugmentation, ActualNumbers, by.x = "V1", by.y = "Filename", all.x = TRUE)
+str(dataNoAugmentation)
 dataNoAugmentation$AbsErr <- abs(dataNoAugmentation$V3 - dataNoAugmentation$EF)
 str(dataNoAugmentation)
 
@@ -55,7 +59,7 @@ modelNoAugmentation <- lm(dataNoAugmentation$EF ~ dataNoAugmentation$V3)
 summary(modelNoAugmentation)$r.squared
 # 0.79475
 
-
+str(beatByBeat)
 beatByBeat <- merge(beatByBeat, ActualNumbers, by.x = "Filename", by.y = "Filename", all.x = TRUE)
 summary(abs(beatByBeat$meanPrediction - beatByBeat$EF))
 # Mean of 4.051697
