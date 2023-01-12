@@ -9,19 +9,17 @@
 # If you don't specify a job ID, this will fallback to the latest job output file
 # it finds.
 
-OUTDIR=output/slurm
-
-# See if user provided job id. If not, then fallback to latest job output file
+# See if user specified file to watch. If not, then fallback to latest job output file
 if [ -z "$1" ]
   then
-    JOB_FILE=$(ls -1 ${OUTDIR} | tail -n 1)
+    # Just assume output directory for Slurm files, not much else we can do
+    OUTDIR=output/slurm
+    FILE=$OUTDIR/$(ls -1 ${OUTDIR} | tail -n 1)
     echo "No job ID provided. Falling back to latest output file found in ${OUTDIR}"
 else
-  JOB_FILE=$(ls -1 ${OUTDIR} | grep $1)
+  FILE=$1
 fi
 
-JOB_OUTPUT=$OUTDIR/$JOB_FILE
-
-echo "Tailing ${JOB_OUTPUT}..."
+echo "Tailing ${FILE}..."
 echo
-tail -f $JOB_OUTPUT
+tail -f $FILE
