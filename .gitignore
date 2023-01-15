@@ -1,5 +1,6 @@
 # For direnv; used to automatically activate conda environment
 .envrc
+output/
 
 .ipynb_checkpoints/
 __pycache__/
