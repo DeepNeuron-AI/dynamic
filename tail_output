@@ -1,0 +1,25 @@
+#!/bin/bash
+# This lets you watch the output of a Slurm job live, as if it was running in 
+# your terminal. 
+#
+# You can optionally provide a job ID to look out for. Note that the output file
+# does not immediately come into existence, so double-check that it exists if
+# this command fails!
+#
+# If you don't specify a job ID, this will fallback to the latest job output file
+# it finds.
+
+# See if user specified file to watch. If not, then fallback to latest job output file
+if [ -z "$1" ]
+  then
+    # Just assume output directory for Slurm files, not much else we can do
+    OUTDIR=output/slurm
+    FILE=$OUTDIR/$(ls -1 ${OUTDIR} | tail -n 1)
+    echo "No job ID provided. Falling back to latest output file found in ${OUTDIR}"
+else
+  FILE=$1
+fi
+
+echo "Tailing ${FILE}..."
+echo
+tail -f $FILE
