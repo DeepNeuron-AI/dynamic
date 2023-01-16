@@ -75,12 +75,15 @@ summary(modelBeatByBeat)$r.squared
 beatByBeatAnalysis <- merge(sizeRelevantFrames, data, by.x = c("Filename", "Frame"), by.y = c("V1", "V2"))
 str(beatByBeatAnalysis)
 
+write.csv(beatByBeatAnalysis, "beat_by_beat_results.csv", row.names=FALSE)
+
 
 MAEdata <- data.frame(counter = 1:500)
 MAEdata$sample <- -9999
 MAEdata$error <- -9999
 
 str(MAEdata)
+
 
 for (i in 1:500){
 
@@ -96,6 +99,8 @@ MAEdata$error[i] <- mean(samplingBeat$error )
 }
 
 str(MAEdata)
+
+write.csv(MAEdata, "MAE_results.csv", row.names=FALSE)
 
 beatBoxPlot <- ggplot(data = MAEdata) + geom_boxplot(aes(x = sample, y = error, group = sample), outlier.shape = NA
 ) + theme_classic() + theme(legend.position = "none", axis.text.y = element_text( size=7)) + xlab("Number of Sampled Beats") + ylab("Mean Absolute Error") + scale_fill_brewer(palette = "Set1", direction = -1) 
