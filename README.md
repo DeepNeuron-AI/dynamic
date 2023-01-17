@@ -11,6 +11,14 @@ For more details, see the accompanying paper,
 > [**Video-based AI for beat-to-beat assessment of cardiac function**](https://www.nature.com/articles/s41586-020-2145-8)<br/>
   David Ouyang, Bryan He, Amirata Ghorbani, Neal Yuan, Joseph Ebinger, Curt P. Langlotz, Paul A. Heidenreich, Robert A. Harrington, David H. Liang, Euan A. Ashley, and James Y. Zou. <b>Nature</b>, March 25, 2020. https://doi.org/10.1038/s41586-020-2145-8
 
+Ultrasound2023 
+-------
+- Allister
+- Lex 
+- Colin 
+- Jack 
+- Mark 
+
 Dataset
 -------
 We share a deidentified set of 10,030 echocardiogram images which were used for training EchoNet-Dynamic.
