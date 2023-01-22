@@ -4,7 +4,6 @@ import math
 import os
 import time
 
-import click
 import matplotlib.pyplot as plt
 import numpy as np
 import sklearn.metrics
@@ -14,29 +13,28 @@ import tqdm
 
 import echonet
 
-
-@click.command("video")
-@click.option("--data_dir", type=click.Path(exists=True, file_okay=False), default=None)
-@click.option("--output", type=click.Path(file_okay=False), default=None)
-@click.option("--task", type=str, default="EF")
-@click.option("--model_name", type=click.Choice(
-    sorted(name for name in torchvision.models.video.__dict__
-           if name.islower() and not name.startswith("__") and callable(torchvision.models.video.__dict__[name]))),
-    default="r2plus1d_18")
-@click.option("--pretrained/--random", default=True)
-@click.option("--weights", type=click.Path(exists=True, dir_okay=False), default=None)
-@click.option("--run_test/--skip_test", default=False)
-@click.option("--num_epochs", type=int, default=45)
-@click.option("--lr", type=float, default=1e-4)
-@click.option("--weight_decay", type=float, default=1e-4)
-@click.option("--lr_step_period", type=int, default=15)
-@click.option("--frames", type=int, default=32)
-@click.option("--period", type=int, default=2)
-@click.option("--num_train_patients", type=int, default=None)
-@click.option("--num_workers", type=int, default=4)
-@click.option("--batch_size", type=int, default=20)
-@click.option("--device", type=str, default=None)
-@click.option("--seed", type=int, default=0)
+# @click.command("video")
+# @click.option("--data_dir", type=click.Path(exists=True, file_okay=False), default=None)
+# @click.option("--output", type=click.Path(file_okay=False), default=None)
+# @click.option("--task", type=str, default="EF")
+# @click.option("--model_name", type=click.Choice(
+#     sorted(name for name in torchvision.models.video.__dict__
+#            if name.islower() and not name.startswith("__") and callable(torchvision.models.video.__dict__[name]))),
+#     default="r2plus1d_18")
+# @click.option("--pretrained/--random", default=True)
+# @click.option("--weights", type=click.Path(exists=True, dir_okay=False), default=None)
+# @click.option("--run_test/--skip_test", default=False)
+# @click.option("--num_epochs", type=int, default=45)
+# @click.option("--lr", type=float, default=1e-4)
+# @click.option("--weight_decay", type=float, default=1e-4)
+# @click.option("--lr_step_period", type=int, default=15)
+# @click.option("--frames", type=int, default=32)
+# @click.option("--period", type=int, default=2)
+# @click.option("--num_train_patients", type=int, default=None)
+# @click.option("--num_workers", type=int, default=4)
+# @click.option("--batch_size", type=int, default=20)
+# @click.option("--device", type=str, default=None)
+# @click.option("--seed", type=int, default=0)
 def run(
     data_dir=None,
     output=None,
@@ -182,7 +180,7 @@ def run(
                 dataloader = torch.utils.data.DataLoader(
                     ds, batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=(device.type == "cuda"), drop_last=(phase == "train"))
 
-                loss, yhat, y = echonet.utils.video.run_epoch(model, dataloader, phase == "train", optim, device)
+                loss, yhat, y = run_epoch(model, dataloader, phase == "train", optim, device)
                 f.write("{},{},{},{},{},{},{},{},{}\n".format(epoch,
                                                               phase,
                                                               loss,
@@ -225,7 +223,7 @@ def run(
                 dataloader = torch.utils.data.DataLoader(
                     echonet.datasets.Echo(root=data_dir, split=split, **kwargs),
                     batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=(device.type == "cuda"))
-                loss, yhat, y = echonet.utils.video.run_epoch(model, dataloader, False, None, device)
+                loss, yhat, y = run_epoch(model, dataloader, False, None, device)
                 f.write("{} (one clip) R2:   {:.3f} ({:.3f} - {:.3f})\n".format(split, *echonet.utils.bootstrap(y, yhat, sklearn.metrics.r2_score)))
                 f.write("{} (one clip) MAE:  {:.2f} ({:.2f} - {:.2f})\n".format(split, *echonet.utils.bootstrap(y, yhat, sklearn.metrics.mean_absolute_error)))
                 f.write("{} (one clip) RMSE: {:.2f} ({:.2f} - {:.2f})\n".format(split, *tuple(map(math.sqrt, echonet.utils.bootstrap(y, yhat, sklearn.metrics.mean_squared_error)))))
@@ -235,7 +233,7 @@ def run(
                 ds = echonet.datasets.Echo(root=data_dir, split=split, **kwargs, clips="all")
                 dataloader = torch.utils.data.DataLoader(
                     ds, batch_size=1, num_workers=num_workers, shuffle=False, pin_memory=(device.type == "cuda"))
-                loss, yhat, y = echonet.utils.video.run_epoch(model, dataloader, False, None, device, save_all=True, block_size=batch_size)
+                loss, yhat, y = run_epoch(model, dataloader, False, None, device, save_all=True, block_size=batch_size)
                 f.write("{} (all clips) R2:   {:.3f} ({:.3f} - {:.3f})\n".format(split, *echonet.utils.bootstrap(y, np.array(list(map(lambda x: x.mean(), yhat))), sklearn.metrics.r2_score)))
                 f.write("{} (all clips) MAE:  {:.2f} ({:.2f} - {:.2f})\n".format(split, *echonet.utils.bootstrap(y, np.array(list(map(lambda x: x.mean(), yhat))), sklearn.metrics.mean_absolute_error)))
                 f.write("{} (all clips) RMSE: {:.2f} ({:.2f} - {:.2f})\n".format(split, *tuple(map(math.sqrt, echonet.utils.bootstrap(y, np.array(list(map(lambda x: x.mean(), yhat))), sklearn.metrics.mean_squared_error)))))
