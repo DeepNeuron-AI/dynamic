@@ -4,7 +4,7 @@ import math
 import os
 import time
 
-import click
+# import click
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
@@ -16,26 +16,26 @@ import tqdm
 import echonet
 
 
-@click.command("segmentation")
-@click.option("--data_dir", type=click.Path(exists=True, file_okay=False), default=None)
-@click.option("--output", type=click.Path(file_okay=False), default=None)
-@click.option("--model_name", type=click.Choice(
-    sorted(name for name in torchvision.models.segmentation.__dict__
-           if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name]))),
-    default="deeplabv3_resnet50")
-@click.option("--pretrained/--random", default=False)
-@click.option("--weights", type=click.Path(exists=True, dir_okay=False), default=None)
-@click.option("--run_test/--skip_test", default=False)
-@click.option("--save_video/--skip_video", default=False)
-@click.option("--num_epochs", type=int, default=50)
-@click.option("--lr", type=float, default=1e-5)
-@click.option("--weight_decay", type=float, default=0)
-@click.option("--lr_step_period", type=int, default=None)
-@click.option("--num_train_patients", type=int, default=None)
-@click.option("--num_workers", type=int, default=4)
-@click.option("--batch_size", type=int, default=20)
-@click.option("--device", type=str, default=None)
-@click.option("--seed", type=int, default=0)
+# @click.command("segmentation")
+# @click.option("--data_dir", type=click.Path(exists=True, file_okay=False), default=None)
+# @click.option("--output", type=click.Path(file_okay=False), default=None)
+# @click.option("--model_name", type=click.Choice(
+#     sorted(name for name in torchvision.models.segmentation.__dict__
+#            if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name]))),
+#     default="deeplabv3_resnet50")
+# @click.option("--pretrained/--random", default=False)
+# @click.option("--weights", type=click.Path(exists=True, dir_okay=False), default=None)
+# @click.option("--run_test/--skip_test", default=False)
+# @click.option("--save_video/--skip_video", default=False)
+# @click.option("--num_epochs", type=int, default=50)
+# @click.option("--lr", type=float, default=1e-5)
+# @click.option("--weight_decay", type=float, default=0)
+# @click.option("--lr_step_period", type=int, default=None)
+# @click.option("--num_train_patients", type=int, default=None)
+# @click.option("--num_workers", type=int, default=4)
+# @click.option("--batch_size", type=int, default=20)
+# @click.option("--device", type=str, default=None)
+# @click.option("--seed", type=int, default=0)
 def run(
     data_dir=None,
     output=None,
