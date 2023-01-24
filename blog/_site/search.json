@@ -1,0 +1,23 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "Monash DeepNeuron (MDN) is a Monash University student team focused on improving the world with Artificial Intelligence (AI) and High-Performance Computing (HPC).\n\nColin La: Team lead (MDN)\nAllister Lim: DL member (MDN)\nLex Gallon: DL member (MDN)\nJack Bassat: DL member (MDN)\nMark Zheng: DL member (MDN)\n\nGlobal MedEd Network is a US based non-profit organisation, staffed by professional cardiologists with deep experience in low-resource medical environments such as Haiti.\n\nNorissa Haynes: Supervisor (Global MedED)\nJonathan Gibbs: Supervisor (?)\nNissan Dookeran: Supervisor (?)"
+  },
+  {
+    "objectID": "about.html#what-are-we-doing",
+    "href": "about.html#what-are-we-doing",
+    "title": "About",
+    "section": "What are we doing?",
+    "text": "What are we doing?\nThis project is a collaboration between MDN and Global MedEd to verify and improve upon machine learning models that can help cardiologists more easily and reliably diagnose patients. We are particularly interested in the application of such models in low resource environments.\nSpecifically, we started by reproducing the results of the Echonet-Dynamic paper. This paper includes a machine-learning pipeline for estimating Ejection Fraction as well as a publicly available dataset of over ten thousand echocardiograms. This paper is focused on analysing only the left ventricle of the heart, but our team wishes to extend this to work with the right ventricle too. This is a challenge due to the absence of data available to us about the right ventricle, leading us to attempt a self-supervised approach (while learning along the way!).\nSee our progress updates for more details, and check out our links for our public Github repo!"
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "MDN x Global MedEd",
+    "section": "",
+    "text": "Progress update #1\n\n\n\n\n\n\n\nprogress\n\n\n\n\n\n\n\n\n\n\n\nJan 21, 2023\n\n\nLex Gallon\n\n\n\n\n\n\nNo matching items"
+  }
+]
