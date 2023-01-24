@@ -212,10 +212,10 @@ class Echo(torchvision.datasets.VisionDataset):
             elif t == "LargeIndex":
                 # Traces are sorted by cross-sectional area
                 # Largest (diastolic) frame is last
-                target.append(np.int(self.frames[key][-1]))
+                target.append(np.int8(self.frames[key][-1]))
             elif t == "SmallIndex":
                 # Largest (diastolic) frame is first
-                target.append(np.int(self.frames[key][0]))
+                target.append(np.int8(self.frames[key][0]))
             elif t == "LargeFrame":
                 target.append(video[:, self.frames[key][-1], :, :])
             elif t == "SmallFrame":
@@ -229,7 +229,7 @@ class Echo(torchvision.datasets.VisionDataset):
                 x = np.concatenate((x1[1:], np.flip(x2[1:])))
                 y = np.concatenate((y1[1:], np.flip(y2[1:])))
 
-                r, c = skimage.draw.polygon(np.rint(y).astype(np.int), np.rint(x).astype(np.int), (video.shape[2], video.shape[3]))
+                r, c = skimage.draw.polygon(np.rint(y).astype(np.int8), np.rint(x).astype(np.int8), (video.shape[2], video.shape[3]))
                 mask = np.zeros((video.shape[2], video.shape[3]), np.float32)
                 mask[r, c] = 1
                 target.append(mask)
