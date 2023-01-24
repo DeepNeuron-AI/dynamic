@@ -9,9 +9,6 @@ import numpy as np
 import torch
 import tqdm
 
-from . import video
-from . import segmentation
-
 
 def loadvideo(filename: str) -> np.ndarray:
     """Loads a video from a file.
@@ -174,6 +171,3 @@ def dice_similarity_coefficient(inter, union):
         union (iterable): iterable of the unions
     """
     return 2 * sum(inter) / (sum(union) + sum(inter))
-
-
-__all__ = ["video", "segmentation", "loadvideo", "savevideo", "get_mean_and_std", "bootstrap", "latexify", "dice_similarity_coefficient"]

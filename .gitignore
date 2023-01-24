@@ -1,5 +1,10 @@
 # For direnv; used to automatically activate conda environment
 .envrc
+# Any virtual environment folder
+*venv*/
+# VS Code stuff
+.vscode
+
 output/
 
 .ipynb_checkpoints/

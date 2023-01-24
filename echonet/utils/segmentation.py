@@ -3,8 +3,9 @@
 import math
 import os
 import time
+from argparse import ArgumentParser
+from pathlib import Path
 
-import click
 import matplotlib.pyplot as plt
 import numpy as np
 import scipy.signal
@@ -16,26 +17,6 @@ import tqdm
 import echonet
 
 
-@click.command("segmentation")
-@click.option("--data_dir", type=click.Path(exists=True, file_okay=False), default=None)
-@click.option("--output", type=click.Path(file_okay=False), default=None)
-@click.option("--model_name", type=click.Choice(
-    sorted(name for name in torchvision.models.segmentation.__dict__
-           if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name]))),
-    default="deeplabv3_resnet50")
-@click.option("--pretrained/--random", default=False)
-@click.option("--weights", type=click.Path(exists=True, dir_okay=False), default=None)
-@click.option("--run_test/--skip_test", default=False)
-@click.option("--save_video/--skip_video", default=False)
-@click.option("--num_epochs", type=int, default=50)
-@click.option("--lr", type=float, default=1e-5)
-@click.option("--weight_decay", type=float, default=0)
-@click.option("--lr_step_period", type=int, default=None)
-@click.option("--num_train_patients", type=int, default=None)
-@click.option("--num_workers", type=int, default=4)
-@click.option("--batch_size", type=int, default=20)
-@click.option("--device", type=str, default=None)
-@click.option("--seed", type=int, default=0)
 def run(
     data_dir=None,
     output=None,
@@ -496,3 +477,44 @@ def _video_collate_fn(x):
     target = zip(*target)
 
     return video, target, i
+
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser(
+        prog="segmentation",
+        description="Echonet-dynamic segmentation",
+    )
+
+    parser.add_argument("--data-dir", type=Path, default=None)
+    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--model-name", choices=sorted(name for name in torchvision.models.segmentation.__dict__ if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name])), default="deeplabv3_resnet50")
+
+    pretrained_group = parser.add_mutually_exclusive_group()
+    pretrained_group.add_argument("--pretrained", action="store_true", default=False)
+    pretrained_group.add_argument("--random", action="store_false", dest="pretrained")
+
+    parser.add_argument("--weights", type=Path, default=None)
+
+    run_test_group = parser.add_mutually_exclusive_group()
+    run_test_group.add_argument("--run-test", action="store_true", default=False)
+    run_test_group.add_argument("--skip-test", action="store_false", dest="run_test")
+
+    save_video_group = parser.add_mutually_exclusive_group()
+    save_video_group.add_argument("--save-video", action="store_true", default=False)
+    save_video_group.add_argument("--skip-video", action="store_false", dest="save_video")
+
+    parser.add_argument("--num-epochs", type=int, default=50)
+    parser.add_argument("--lr", type=float, default=1e-5)
+    parser.add_argument("--weight-decay", type=float, default=0)
+    parser.add_argument("--lr-step-period", type=int, default=None)
+    parser.add_argument("--num-train-patients", type=int, default=None)
+    parser.add_argument("--num-workers", type=int, default=4)
+    parser.add_argument("--batch-size", type=int, default=20)
+    parser.add_argument("--device", type=str, default=None)
+    parser.add_argument("--seed", type=int, default=0)
+
+    args = parser.parse_args()
+    args_dict = dict(args._get_kwargs())
+    print(f"Running with args: {args_dict}")
+    run(**args_dict)
