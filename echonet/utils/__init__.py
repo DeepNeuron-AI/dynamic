@@ -9,6 +9,9 @@ import numpy as np
 import torch
 import tqdm
 
+from . import segmentation
+from . import video
+
 
 def loadvideo(filename: str) -> np.ndarray:
     """Loads a video from a file.
