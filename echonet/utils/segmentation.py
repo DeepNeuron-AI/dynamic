@@ -232,6 +232,8 @@ def run(
 
         os.makedirs(os.path.join(output, "videos"), exist_ok=True)
         os.makedirs(os.path.join(output, "size"), exist_ok=True)
+        segmentation_masks_dir = Path(output) / "segmentation_masks"
+        segmentation_masks_dir.mkdir(parents=True)
         echonet.utils.latexify()
 
         with torch.no_grad():
@@ -259,6 +261,11 @@ def run(
 
                         video_copy = video.copy()
                         segmentation_mask = logit > 0
+                        
+                        # Save segmentation mask to file so we can easily retrieve it later
+                        segmentation_fp = segmentation_masks_dir / Path(filename).with_suffix(".npy")
+                        np.save(segmentation_fp, segmentation_mask)
+
                         # Transpose so we can apply segmentation mask, then transpose back to original shape
                         video = video.transpose((0, 2, 3, 1)) # e.g. (248 frames, 112 height, 112 width, 3 channels)
                         video[segmentation_mask] = RED
@@ -270,13 +277,11 @@ def run(
                         # If a pixel is in the segmentation, saturate blue channel
                         # Leave alone otherwise
                         
-                        # video[:, 0, :, w:] = np.maximum(255. * (logit > 0), video[:, 0, :, w:])  # pylint: disable=E1111
-
                         # Add blank canvas under pair of videos
                         video = np.concatenate((video, np.zeros_like(video)), 2)
 
                         # Compute size of segmentation per frame
-                        size = (logit > 0).sum((1, 2))
+                        size = segmentation_mask.sum((1, 2))
 
                         # Identify systole frames with peak detection
                         trim_min = sorted(size)[round(len(size) ** 0.05)]
