@@ -8,6 +8,7 @@
 .env
 
 output/
+echonet-data/
 
 .ipynb_checkpoints/
 __pycache__/
