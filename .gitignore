@@ -4,6 +4,8 @@
 *venv*/
 # VS Code stuff
 .vscode
+# Place to store extra environment variables (useful for configuration)
+.env
 
 output/
 
