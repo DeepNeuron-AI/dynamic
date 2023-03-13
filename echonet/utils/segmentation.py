@@ -532,6 +532,9 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args()
+    #This uses the arg parser and calls 
     args_dict = dict(args._get_kwargs())
     print(f"Running with args: {args_dict}")
+    #note that adding the ** allows you to unpack the dictionary values
     run(**args_dict)
+    
