@@ -48,7 +48,6 @@ def get_angle(rect: Rectangle) -> float:
     if width < height:
         return 0 - angle
     elif height <= width:
-        
         return 90 - angle
 
 
@@ -310,11 +309,9 @@ def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
     RV_masks
     """
     LV_segmentations = mask_to_image(LV_masks)
-    RV_segmentations = mask_to_image(RV_masks)
     num_frames, frame_height, frame_width = LV_masks.shape
 
     LV_rects = [get_min_area_rect(LV_segmentation) for LV_segmentation in LV_segmentations]
-    RV_segmentations = np.zeros(shape=RV_segmentations.shape, dtype=RV_segmentations.dtype)
 
     valve_cutoff_points_list = []
     apex_cutoff_points_list = []
@@ -341,10 +338,7 @@ def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
         LV_septum_border_cutoff_points_list.append(LV_septum_border_cutoff_points)
         crop_mask_with_line(mask=RV_segmentation_mask, line=LV_septum_border_cutoff_points, right=True)
 
-        RV_segmentations[i] = mask_to_image(RV_segmentation_mask)
-
     return RV_masks
-
 
 def get_largest_contour(RV_masks: np.ndarray) -> np.ndarray:
     """
@@ -454,7 +448,6 @@ def replace_tiny_RV_frames(RV_masks) -> np.ndarray:
     RV_segmentations = mask_to_image(RV_masks)
     num_frames, frame_height, frame_width = RV_masks.shape
 
-    
     RV_contours_list = [cv2.findContours(frame, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)[0][0] for frame in RV_segmentations]
     RV_areas = np.array([cv2.contourArea(contour) for contour in RV_contours_list])
     mean_RV_area = np.mean(RV_areas)
