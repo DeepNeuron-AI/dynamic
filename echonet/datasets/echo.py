@@ -6,6 +6,7 @@ import pandas
 
 import numpy as np
 import skimage.draw
+import torch
 import torchvision
 import echonet
 
@@ -68,6 +69,7 @@ class Echo(torchvision.datasets.VisionDataset):
                  pad=None,
                  noise=None,
                  target_transform=None,
+                 flip_video=False,
                  external_test_location=None):
         if root is None:
             root = echonet.config.DATA_DIR
@@ -87,6 +89,7 @@ class Echo(torchvision.datasets.VisionDataset):
         self.pad = pad
         self.noise = noise
         self.target_transform = target_transform
+        self.flip_video = flip_video
         self.external_test_location = external_test_location
 
         self.fnames, self.outcome = [], []
@@ -260,6 +263,10 @@ class Echo(torchvision.datasets.VisionDataset):
             temp[:, :, self.pad:-self.pad, self.pad:-self.pad] = video  # pylint: disable=E1130
             i, j = np.random.randint(0, 2 * self.pad, 2)
             video = temp[:, :, i:(i + h), j:(j + w)]
+
+        # Flip the video left-right if desired
+        if self.flip_video:
+            video = np.flip(video, axis=-1)
 
         return video, target
 
