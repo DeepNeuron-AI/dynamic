@@ -302,6 +302,15 @@ def contains_RV(LV_masks: np.ndarray, RV_masks: np.ndarray) -> bool:
     return np.mean(ious) < 0.5
 
 
+def did_RV_disappear(RV_masks: np.ndarray) -> bool:
+    """
+    Returns True if the given RV segmentations contain at least one frame where
+    the RV mask has **zero** pixels in it. If this happens, the RV segmentation
+    should be considered practically useless, since the RV shouldn't collapse to
+    a singularity in a normal human being.
+    """
+    return any(np.sum(RV_masks, axis=(1, 2)) == 0)
+
 def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
     """
     Returns
@@ -337,6 +346,9 @@ def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
         LV_septum_border_cutoff_points = extrapolate_line(bottom_left_LV, top_left_LV, frame_height=frame_height, frame_width=frame_width)
         LV_septum_border_cutoff_points_list.append(LV_septum_border_cutoff_points)
         crop_mask_with_line(mask=RV_segmentation_mask, line=LV_septum_border_cutoff_points, right=True)
+
+    if did_RV_disappear(RV_masks):
+        raise RVDisappeared("RV disappeared in at least one frame after `cutoff_from_LV_box()`")
 
     return RV_masks
 
@@ -385,6 +397,9 @@ def crop_ultrasound_borders(RV_masks: np.ndarray) -> np.ndarray:
     ultrasound_right_line = extrapolate_line(right_ultrasound_corner, top_ultrasound_corner, frame_height, frame_width)
     for s in RV_masks:
         crop_mask_with_line(s, ultrasound_right_line, above=True)
+
+    if did_RV_disappear(RV_masks):
+        raise RVDisappeared("RV disappeared in at least one frame after `crop_ultrasound_borders()`")
 
     return RV_masks
 
@@ -438,8 +453,8 @@ def remove_septum(LV_masks, RV_masks) -> np.ndarray:
         right_cutoff_points = extrapolate_line(RV_line[0], RV_line[1], frame_height=frame_height, frame_width=frame_width)
         crop_mask_with_line(RV_segmentation_mask, right_cutoff_points, right=True)
 
-    # Update RV segmentation *images* based on these new masks
-    RV_segmentations = mask_to_image(RV_masks)
+    if did_RV_disappear(RV_masks):
+        raise RVDisappeared("RV disappeared in at least one frame after `remove_septum()`")
 
     return RV_masks
 
@@ -473,7 +488,6 @@ def replace_tiny_RV_frames(RV_masks) -> np.ndarray:
                 break
 
             offset += 1
-
 
     return RV_masks
 

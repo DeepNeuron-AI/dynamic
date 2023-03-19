@@ -6,16 +6,20 @@ import tqdm
 from dotenv import dotenv_values
 
 import echonet
-from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared
+from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared, did_RV_disappear
 
 from pathlib import Path
 
 config = dotenv_values(".env")
 ECHONET_VIDEO_DIR = Path(config["ECHONET_VIDEO_DIR"])
+BEST_OUTPUT_DIR = Path(f"output/segmentation/best-RV/")
 NUM_WORKERS = 4
 CHECKPOINT_FP = Path("output/segmentation/all-patients/best.pt")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BATCH_SIZE = 10
+
+if not BEST_OUTPUT_DIR.exists():
+    BEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def run_inference(dataloader, model):
@@ -101,36 +105,19 @@ for (LV_masks_list, filenames), (RV_masks_list, filenames) in zip(run_inference(
         if not contains_RV(LV_masks, RV_masks):
             print("Video does not appear to contain RV, skipping")
             continue
-        if any(np.sum(RV_masks, axis=(1, 2)) == 0):
-            print("Initial RV segmentation completely disappeared in at least one frame, skipping")
+        if did_RV_disappear(RV_masks):
+            print("Initial RV segmentation already completely disappeared in at least one frame, skipping")
             continue
-
 
         # Refine the RV masks
-        RV_masks = cutoff_from_LV_box(LV_masks, RV_masks)
-        if any(np.sum(RV_masks, axis=(1, 2)) == 0):
-            print("RV segmentation (after LV cutoffs) completely disappeared in at least one frame, skipping")
-            continue
-
-        RV_masks = crop_ultrasound_borders(RV_masks)
-        if any(np.sum(RV_masks, axis=(1, 2)) == 0):
-            print("RV segmentation (after border crop) completely disappeared in at least one frame, skipping")
-            continue
         try:
+            RV_masks = cutoff_from_LV_box(LV_masks, RV_masks)
+            RV_masks = crop_ultrasound_borders(RV_masks)
             RV_masks = get_largest_contour(RV_masks)
-            if any(np.sum(RV_masks, axis=(1, 2)) == 0):
-                print("RV segmentation (largest contour) completely disappeared in at least one frame, skipping")
-                continue
+            RV_masks = remove_septum(LV_masks, RV_masks)
+            RV_masks = replace_tiny_RV_frames(RV_masks)
         except RVDisappeared as e:
-            print("RV disappeared afer cropping LV box and ultrasound borders, skipping")
-            continue
-            
-        RV_masks = remove_septum(LV_masks, RV_masks)
-        if any(np.sum(RV_masks, axis=(1, 2)) == 0):
-            print("RV segmentation (after septum removal) completely disappeared in at least one frame, skipping")
-            continue
-
-        RV_masks = replace_tiny_RV_frames(RV_masks)
+            print(e)
 
         # If we made it this far, apply some metrics to guess if this is a "good" 
         # quality RV segmentation or not. We only want the best of the best here
@@ -138,8 +125,8 @@ for (LV_masks_list, filenames), (RV_masks_list, filenames) in zip(run_inference(
             print("LV and RV area did not correlate well")
         else:
             success_counter += 1
-            print(f"Actually worked! ({success_counter})")
-            output_fp = Path(f"output/segmentation/best-RV/{filename}").with_suffix(".npy")
+            print(f"Actually worked ({success_counter} successes)! Saving {filename} segmentation...")
+            output_fp = BEST_OUTPUT_DIR / Path(filename).with_suffix(".npy")
             np.save(output_fp, RV_masks)
 
 # %%
