@@ -4,8 +4,11 @@
 *venv*/
 # VS Code stuff
 .vscode
+# Place to store extra environment variables (useful for configuration)
+.env
 
 output/
+echonet-data/
 
 .ipynb_checkpoints/
 __pycache__/
