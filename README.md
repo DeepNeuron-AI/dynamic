@@ -82,7 +82,7 @@ echonet segmentation --save_video
 However, *for this repo*, you would replace this with
 
 ```
-python -m echonet/utils/segmentation.py --save-video
+python -m echonet.utils.segmentation.py --save-video
 ```
 
 All arguments are otherwise provided in the same format (like `save-video`).
@@ -91,7 +91,7 @@ All arguments are otherwise provided in the same format (like `save-video`).
 Just do
 
 ```
-python -m echonet/utils/video.py
+python -m echonet.utils.video.py
 ```
 
 # How do we achieve right ventricle segmentations without any data?
