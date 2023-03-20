@@ -6,13 +6,13 @@ import tqdm
 from dotenv import dotenv_values
 
 import echonet
-from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared, did_RV_disappear
+from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared, did_ventricle_disappear
 
 from pathlib import Path
 
 config = dotenv_values(".env")
 ECHONET_VIDEO_DIR = Path(config["ECHONET_VIDEO_DIR"])
-BEST_OUTPUT_DIR = Path(f"output/segmentation/best-RV/")
+BEST_OUTPUT_DIR = Path(f"output/segmentation/weak-labels/")
 NUM_WORKERS = 4
 CHECKPOINT_FP = Path("output/segmentation/all-patients/best.pt")
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -20,6 +20,8 @@ BATCH_SIZE = 10
 
 if not BEST_OUTPUT_DIR.exists():
     BEST_OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    (BEST_OUTPUT_DIR / "LV").mkdir(parents=True, exist_ok=True)
+    (BEST_OUTPUT_DIR / "RV").mkdir(parents=True, exist_ok=True)
 
 
 def run_inference(dataloader, model):
@@ -95,38 +97,44 @@ model.load_state_dict(checkpoint['state_dict'])
 
 model.eval()
 
+with torch.no_grad():
+    success_counter = 0
+    for (LV_masks_list, filenames), (RV_masks_list, filenames) in zip(run_inference(dataloader, model), run_inference(flipped_dataloader, model)):
+        for LV_masks, RV_masks, filename in zip(LV_masks_list, RV_masks_list, filenames):
+            RV_masks = np.flip(RV_masks, axis=-1)
 
+            if not contains_RV(LV_masks, RV_masks):
+                print("Video does not appear to contain RV, skipping")
+                continue
+            if did_ventricle_disappear(RV_masks):
+                print("Initial RV segmentation already completely disappeared in at least one frame, skipping")
+                continue
+            if did_ventricle_disappear(LV_masks):
+                print("Initial LV segmentation disappeared in (at least) one frame!")
+                continue
 
-success_counter = 0
-for (LV_masks_list, filenames), (RV_masks_list, filenames) in zip(run_inference(dataloader, model), run_inference(flipped_dataloader, model)):
-    for LV_masks, RV_masks, filename in zip(LV_masks_list, RV_masks_list, filenames):
-        RV_masks = np.flip(RV_masks, axis=-1)
+            # Refine the RV masks
+            try:
+                print(filename)
+                RV_masks = cutoff_from_LV_box(LV_masks, RV_masks)
+                RV_masks = crop_ultrasound_borders(RV_masks)
+                RV_masks = get_largest_contour(RV_masks)
+                RV_masks = remove_septum(LV_masks, RV_masks)
+                # RV_masks = replace_tiny_RV_frames(RV_masks)
+            except RVDisappeared as e:
+                print(e)
+                continue
 
-        if not contains_RV(LV_masks, RV_masks):
-            print("Video does not appear to contain RV, skipping")
-            continue
-        if did_RV_disappear(RV_masks):
-            print("Initial RV segmentation already completely disappeared in at least one frame, skipping")
-            continue
-
-        # Refine the RV masks
-        try:
-            RV_masks = cutoff_from_LV_box(LV_masks, RV_masks)
-            RV_masks = crop_ultrasound_borders(RV_masks)
-            RV_masks = get_largest_contour(RV_masks)
-            RV_masks = remove_septum(LV_masks, RV_masks)
-            RV_masks = replace_tiny_RV_frames(RV_masks)
-        except RVDisappeared as e:
-            print(e)
-
-        # If we made it this far, apply some metrics to guess if this is a "good" 
-        # quality RV segmentation or not. We only want the best of the best here
-        if get_LV_RV_area_correlation(LV_masks, RV_masks) < 0.5:
-            print("LV and RV area did not correlate well")
-        else:
-            success_counter += 1
-            print(f"Actually worked ({success_counter} successes)! Saving {filename} segmentation...")
-            output_fp = BEST_OUTPUT_DIR / Path(filename).with_suffix(".npy")
-            np.save(output_fp, RV_masks)
+            # If we made it this far, apply some metrics to guess if this is a "good" 
+            # quality RV segmentation or not. We only want the best of the best here
+            area_corr = get_LV_RV_area_correlation(LV_masks, RV_masks)
+            if area_corr < 0.5:
+                print("LV and RV area did not correlate well")
+            else:
+                success_counter += 1
+                print(f"Actually worked ({success_counter} successes; area correlation={area_corr})! Saving {filename} segmentations...")
+                filename = Path(filename).with_suffix(".npy")
+                np.save(BEST_OUTPUT_DIR / "RV" / filename, RV_masks)
+                np.save(BEST_OUTPUT_DIR / "LV" / filename, LV_masks)
 
 # %%

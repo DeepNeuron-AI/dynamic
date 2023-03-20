@@ -237,22 +237,29 @@ def crop_mask_with_line(mask: np.ndarray, line: List[Point], below=False, above=
     """
     mask_height, mask_width = mask.shape
 
+    crop_count = 0
     for x, y in line:
         y_is_valid = (0 <= y < mask_height)
         x_is_valid = (0 <= x < mask_width)
 
         if below and x_is_valid:
             y = min(y, mask_height-1)
+            crop_count += mask[y:, x].sum()
             mask[y:, x] = False
         if above and x_is_valid:
             y = max(y, 0)
+            crop_count += mask[:y, x].sum()
             mask[:y, x] = False
         if left and y_is_valid:
             x = min(x, mask_width-1)
+            crop_count += mask[y, :x].sum()
             mask[y, :x] = False
         if right and y_is_valid:
             x = max(x, 0)
+            crop_count += mask[y, x:].sum()
             mask[y, x:] = False
+
+    return crop_count
 
 
 def crop_line_to_frame(line: List[Point], frame_height: int, frame_width: int) -> List[Point]:
@@ -302,9 +309,9 @@ def contains_RV(LV_masks: np.ndarray, RV_masks: np.ndarray) -> bool:
     return np.mean(ious) < 0.5
 
 
-def did_RV_disappear(RV_masks: np.ndarray) -> bool:
+def did_ventricle_disappear(RV_masks: np.ndarray) -> bool:
     """
-    Returns True if the given RV segmentations contain at least one frame where
+    Returns True if the given segmentations contain at least one frame where
     the RV mask has **zero** pixels in it. If this happens, the RV segmentation
     should be considered practically useless, since the RV shouldn't collapse to
     a singularity in a normal human being.
@@ -326,6 +333,8 @@ def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
     apex_cutoff_points_list = []
     LV_septum_border_cutoff_points_list = []
 
+    original_pixel_count = RV_masks.sum()
+    crop_count_total = 0
     for i, (LV_rect, RV_segmentation_mask) in enumerate(zip(LV_rects, RV_masks)):
         top_left_LV = find_corner(LV_rect, TOP_LEFT)
         top_right_LV = find_corner(LV_rect, TOP_RIGHT)
@@ -335,19 +344,21 @@ def cutoff_from_LV_box(LV_masks, RV_masks) -> np.ndarray:
         # Remove any points from RV segmentation that seem to be *below* tricuspid valve (e.g. in RA)
         valve_cutoff_points = extrapolate_line(bottom_left_LV, bottom_right_LV, frame_height=frame_height, frame_width=frame_width)
         valve_cutoff_points_list.append(valve_cutoff_points)
-        crop_mask_with_line(mask=RV_segmentation_mask, line=valve_cutoff_points, below=True)
+        crop_count_total += crop_mask_with_line(mask=RV_segmentation_mask, line=valve_cutoff_points, below=True)
 
         # Remove any points from RV segmentation that seem to be *above* heart's apex
         apex_cutoff_points = extrapolate_line(top_left_LV, top_right_LV, frame_height=frame_height, frame_width=frame_width)
         apex_cutoff_points_list.append(apex_cutoff_points)
-        crop_mask_with_line(mask=RV_segmentation_mask, line=apex_cutoff_points, above=True)
+        crop_count_total += crop_mask_with_line(mask=RV_segmentation_mask, line=apex_cutoff_points, above=True)
 
         # Remove any points from RV segmentation that seem to be *right* of the LV's inner edge/septum wall
         LV_septum_border_cutoff_points = extrapolate_line(bottom_left_LV, top_left_LV, frame_height=frame_height, frame_width=frame_width)
         LV_septum_border_cutoff_points_list.append(LV_septum_border_cutoff_points)
-        crop_mask_with_line(mask=RV_segmentation_mask, line=LV_septum_border_cutoff_points, right=True)
+        crop_count_total += crop_mask_with_line(mask=RV_segmentation_mask, line=LV_septum_border_cutoff_points, right=True)
 
-    if did_RV_disappear(RV_masks):
+    print(f"Cropped out: {crop_count_total/original_pixel_count:.6f}")
+
+    if did_ventricle_disappear(RV_masks):
         raise RVDisappeared("RV disappeared in at least one frame after `cutoff_from_LV_box()`")
 
     return RV_masks
@@ -398,7 +409,7 @@ def crop_ultrasound_borders(RV_masks: np.ndarray) -> np.ndarray:
     for s in RV_masks:
         crop_mask_with_line(s, ultrasound_right_line, above=True)
 
-    if did_RV_disappear(RV_masks):
+    if did_ventricle_disappear(RV_masks):
         raise RVDisappeared("RV disappeared in at least one frame after `crop_ultrasound_borders()`")
 
     return RV_masks
@@ -453,7 +464,7 @@ def remove_septum(LV_masks, RV_masks) -> np.ndarray:
         right_cutoff_points = extrapolate_line(RV_line[0], RV_line[1], frame_height=frame_height, frame_width=frame_width)
         crop_mask_with_line(RV_segmentation_mask, right_cutoff_points, right=True)
 
-    if did_RV_disappear(RV_masks):
+    if did_ventricle_disappear(RV_masks):
         raise RVDisappeared("RV disappeared in at least one frame after `remove_septum()`")
 
     return RV_masks
