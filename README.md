@@ -70,7 +70,7 @@ conda env create -f environment.yml
 You can download the original `echonet` dataset from [their page](https://echonet.github.io/dynamic/). For the original `echonet-dynamic` code, you'll need to add your data directory to a file called `echonet.cfg`, but it's recommended to just read [their original instructions](https://github.com/echonet/dynamic) for this setup.
 
 ## Configuration
-Our code often relies on a `.env` file to store personaly environment variables such as filepaths of particular videos or segmentation files, etc. You'll see what variables you need to define in this file based on whatever python script/notebook you are trying to run.
+Our code often relies on a `.env` file to store personal environment variables such as filepaths of particular videos or segmentation files, etc. You'll see what variables you need to define in this file based on whatever python script/notebook you are trying to run.
 
 ## Running segmentation on original dataset
 To make things easier to debug on our end, we altered the original command-line interface for the `echonet-dynamic` code. To train the segmentation model *in the original code*, you would do something like:
