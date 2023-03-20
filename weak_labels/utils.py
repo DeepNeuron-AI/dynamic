@@ -415,7 +415,7 @@ def crop_ultrasound_borders(RV_masks: np.ndarray) -> np.ndarray:
     return RV_masks
 
 
-def remove_septum(LV_masks, RV_masks) -> np.ndarray:
+def remove_septum(LV_masks, RV_masks, scaling_factor: float = 1.0) -> np.ndarray:
     LV_segmentations = mask_to_image(LV_masks)
     RV_segmentations = mask_to_image(RV_masks)
     num_frames, frame_height, frame_width = LV_masks.shape
@@ -439,6 +439,10 @@ def remove_septum(LV_masks, RV_masks) -> np.ndarray:
     # Use average estimated septum width and translate the LV segmentation's inner
     # edge by that amount to guess the right edge of the RV.
     mean_septum_width = np.mean(septum_widths)
+
+    # Potentially downscale septum width. Do this because we noticed some videos 
+    # have highly over-estimated widths, which leads to bad cropping
+    mean_septum_width *= scaling_factor
 
     RV_boxes = []
     RV_lines = []
