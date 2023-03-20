@@ -16,5 +16,7 @@ dependencies:
   - scikit-learn
   - scikit-image
   - matplotlib
-  - libstdcxx-ng
   - ipywidgets
+  # You may need to uncomment out the following if you have issues with linux and you
+  # see an error upon some python import like `ImportError: ... version `GLIBCXX_3.4.30' not found ...`
+  # - libstdcxx-ng
