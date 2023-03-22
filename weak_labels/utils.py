@@ -511,3 +511,32 @@ def get_LV_RV_area_correlation(LV_masks, RV_masks) -> float:
     LV_areas = np.sum(LV_masks, axis=(1,2))
     RV_areas = np.sum(RV_masks, axis=(1,2))
     return stats.pearsonr(LV_areas, RV_areas).correlation
+
+
+def get_average_eccentricity(masks: np.ndarray) -> float:
+    """
+    Returns the average eccentricity of the bounding boxes for the given video's
+    masks. This may be a useful metric for determining how "reasonable" these
+    segmentations are.
+
+    Note this skips over frames that have a zero height/width bounding box.
+
+    Returns
+    -------
+    eccentricity: float
+        Should be in range of [0, 1].
+    """
+    images = mask_to_image(masks)
+    eccentricities = np.zeros(len(images))
+    
+    for i, image in enumerate(images):
+        ((centre_x, centre_y), (width, height), angle) = get_min_area_rect(image)
+        
+        # Ignore frames with zero length
+        if height == 0 or width == 0:
+            continue
+        # Take min to ensure eccentricity is <= 1
+        eccentricities[i] = min(width / height, height / width)
+
+    eccentricities = np.sqrt(1 - eccentricities**2)
+    return eccentricities.mean()

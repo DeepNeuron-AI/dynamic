@@ -6,9 +6,10 @@ import tqdm
 from dotenv import dotenv_values
 
 import echonet
-from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared, did_ventricle_disappear
+from weak_labels.utils import contains_RV, cutoff_from_LV_box, crop_ultrasound_borders, get_largest_contour, get_LV_RV_area_correlation, replace_tiny_RV_frames, remove_septum, RVDisappeared, did_ventricle_disappear, get_average_eccentricity
 
 from pathlib import Path
+import sys
 
 config = dotenv_values(".env")
 ECHONET_VIDEO_DIR = Path(config["ECHONET_VIDEO_DIR"])
@@ -103,6 +104,7 @@ with torch.no_grad():
         for LV_masks, RV_masks, filename in zip(LV_masks_list, RV_masks_list, filenames):
             RV_masks = np.flip(RV_masks, axis=-1)
 
+            print(filename)
             if not contains_RV(LV_masks, RV_masks):
                 print("Video does not appear to contain RV, skipping")
                 continue
@@ -115,16 +117,16 @@ with torch.no_grad():
 
             # Refine the RV masks
             try:
-                print(filename)
                 RV_masks = cutoff_from_LV_box(LV_masks, RV_masks)
                 RV_masks = crop_ultrasound_borders(RV_masks)
                 RV_masks = get_largest_contour(RV_masks)
-                RV_masks = remove_septum(LV_masks, RV_masks)
+                RV_masks = remove_septum(LV_masks, RV_masks, scaling_factor=0.7)
                 # RV_masks = replace_tiny_RV_frames(RV_masks)
             except RVDisappeared as e:
                 print(e)
                 continue
 
+            print(f"{filename}: (RV) eccentricities = {get_average_eccentricity(RV_masks):.4f}")
             # If we made it this far, apply some metrics to guess if this is a "good" 
             # quality RV segmentation or not. We only want the best of the best here
             area_corr = get_LV_RV_area_correlation(LV_masks, RV_masks)
