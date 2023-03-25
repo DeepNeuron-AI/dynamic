@@ -518,6 +518,7 @@ if __name__ == "__main__":
     run_test_group.add_argument("--skip-test", action="store_false", dest="run_test")
 
     save_video_group = parser.add_mutually_exclusive_group()
+    #This is the --save-video that allows you to actually save the videos which segmentation is applied to. 
     save_video_group.add_argument("--save-video", action="store_true", default=False)
     save_video_group.add_argument("--skip-video", action="store_false", dest="save_video")
 
@@ -532,7 +533,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args()
-    #This uses the arg parser and calls 
+    #All the arguments above are stored in this args_dict 
     args_dict = dict(args._get_kwargs())
     print(f"Running with args: {args_dict}")
     #note that adding the ** allows you to unpack the dictionary values

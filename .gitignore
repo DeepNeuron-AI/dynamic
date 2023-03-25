@@ -7,6 +7,8 @@
 # Place to store extra environment variables (useful for configuration)
 .env
 
+
+a4c-video-dir/
 output/
 echonet-data/
 
