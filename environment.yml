@@ -1,13 +1,13 @@
-name: ultrasound
+name: ultrasound2
 channels:
   - conda-forge
   - pytorch
   - nvidia
 dependencies:
   - python=3.8.*
-  - pytorch::pytorch
-  - pytorch::torchvision
-  - pytorch::torchaudio 
+  - pytorch::pytorch=1.13.1
+  - pytorch::torchvision=0.14.1
+  - pytorch::torchaudio=0.13.1
   - pytorch::pytorch-cuda=11.6
   - opencv
   - ipykernel
@@ -16,5 +16,4 @@ dependencies:
   - scikit-learn
   - scikit-image
   - matplotlib
-  - libstdcxx-ng
   - ipywidgets
