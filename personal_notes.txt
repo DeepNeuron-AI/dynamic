@@ -1,0 +1,14 @@
+Parser will create a NameSpace object (whatever that is). 
+
+Probable current workflow for the code:
+
+define EchoClient class
+define client function
+Define a "setup" function which returns parameters?
+
+At least have a Configure_dataloaders which partitions data and returns parameters.
+
+
+FIGURE OUT how to define the train function, whether this needs to be something more than just the Run_epoch?
+- if Fit is just calling train with a set params and epochs = 1, then we CAN just substitute Run Epoch instead I think
+
