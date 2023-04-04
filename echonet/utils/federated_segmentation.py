@@ -7,6 +7,8 @@
 # Can we do FevAvg with EXISTING parameters?
 # Long term options
 
+from collections import OrderedDict
+from typing import List, Tuple
 import math
 import os
 import time
@@ -20,6 +22,7 @@ import torch
 import torchvision
 import tqdm
 import echonet
+from torch.utils.data import random_split
 
 import flwr as fl
 
@@ -501,17 +504,46 @@ def set_parameters(model, parameters):
 
 #TODO HERE: set up trainloaders and valloaders outside run function definition just due to the way this works - might be a question of a fresh script??
 
-def client_fn(client_id) -> EchoClient:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = torchvision.models.segmentation.__dict__["deeplabv3_resnet50"](pretrained=False, aux_loss=False)
-    model.classifier[-1] = torch.nn.Conv2d(model.classifier[-1].in_channels, 1, kernel_size=model.classifier[-1].kernel_size)  # change number of outputs to 1
-    if device.type == "cuda":
-        model = torch.nn.DataParallel(model)
-    model.to(device)
-    optim = torch.optim.SGD(model.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay)
-    trainloader = trainloaders[int(cid)]
-    valloader = valloaders[int(cid)]
-    return EchoClient(model = model, trainloader=trainloader, valloader=valloader, optim = optim)
+def configure_dataloaders(data_dir = None, num_clients = 2, batch_size=20, num_workers=4,pin_memory=True):
+    mean, std = echonet.utils.get_mean_and_std(echonet.datasets.Echo(root=data_dir, split="train"))
+    tasks = ["LargeFrame", "SmallFrame", "LargeTrace", "SmallTrace"]
+    kwargs = {"target_type": tasks,
+              "mean": mean,
+              "std": std
+              }
+    dataset = {}
+    dataset["train"] = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
+    if args.num_train_patients is not None and len(dataset["train"]) > args.num_train_patients:
+        # Subsample patients (used for ablation experiment)
+        indices = np.random.choice(len(dataset["train"]), args.num_train_patients, replace=False)
+        dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
+    dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
+    
+    #Evenly partition training dataset to each client
+    trainset = dataset["train"]
+    partition_size = len(trainset) // num_clients
+    lengths = [partition_size] * num_clients
+    train_sets = random_split(trainset, lengths, torch.Generator().manual_seed(42))
+
+    #Evenly partition validation dataset to each client
+    valset = dataset['val']
+    val_size = len(valset) // num_clients
+    lengths = [val_size] * num_clients
+    val_sets = random_split(valset, lengths, torch.Generator().manual_seed(42))
+
+    #Configure lists of train and test dataloaders
+    trainloaders = []
+    valloaders = []
+    for data in train_sets:
+        dataloader = torch.utils.data.DataLoader(
+                    data, batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=pin_memory, drop_last=True)
+        trainloaders.append(dataloader)
+    for data in val_sets:
+        valloader = torch.utils.data.DataLoader(
+                    data, batch_size=batch_size, num_workers=num_workers, shuffle=True, pin_memory=pin_memory, drop_last=False)
+        valloaders.append(valloader)
+    return trainloaders, valloaders
+
     
 class EchoClient(fl.client.NumPyClient):
     def __init__(self, client_id, model, trainloader, valloader, optim) -> None:
@@ -527,20 +559,47 @@ class EchoClient(fl.client.NumPyClient):
 
     def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict[str, Scalar]]:
         set_parameters(self.model, parameters)
-        loss, _,_,_,_ = run_epoch(self.model, dataloader = self.dataloader, optim = self.optim, train=True)
-        return self.get_parameters(self.net), loss
+        with open(os.path.join(output, "log.csv"), "a") as f:
+            loss, large_inter, large_union, small_inter, small_union = echonet.utils.segmentation.run_epoch(self.model, self.dataloader, True, self.optim, args.device)
+            overall_dice = 2 * (large_inter.sum() + small_inter.sum()) / (large_union.sum() + large_inter.sum() + small_union.sum() + small_inter.sum())
+            large_dice = 2 * large_inter.sum() / (large_union.sum() + large_inter.sum())
+            small_dice = 2 * small_inter.sum() / (small_union.sum() + small_inter.sum())
+            f.write("{},{},{},{},{},{},{},{},{},{},{}\n".format(loss,
+                                                                overall_dice,
+                                                                large_dice,
+                                                                small_dice,
+                                                                large_inter.size,
+                                                                sum(torch.cuda.max_memory_allocated() for i in range(torch.cuda.device_count())),
+                                                                sum(torch.cuda.max_memory_reserved() for i in range(torch.cuda.device_count())),
+                                                                args.batch_size))
+            f.flush()
+            return self.get_parameters(self.net), loss
     
     def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[float, int, Dict[str, Scalar]]:
-        _,_,_,_ = run_epoch(self.model, dataloader = self.dataloader, optim = self.optim, train=False)
+        loss,_,_,_,_ = run_epoch(self.model, dataloader = self.dataloader, optim = self.optim, train=False)
         return super().evaluate(parameters, config) # unsure what the evaluate model should really be looking like here
 
-if __name__ == "__main__":
+
+def client_fn(cid) -> EchoClient:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = torchvision.models.segmentation.__dict__["deeplabv3_resnet50"](pretrained=False, aux_loss=False)
+    model.classifier[-1] = torch.nn.Conv2d(model.classifier[-1].in_channels, 1, kernel_size=model.classifier[-1].kernel_size)  # change number of outputs to 1
+    if device.type == "cuda":
+        model = torch.nn.DataParallel(model)
+    model.to(device)
+    optim = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9, weight_decay=args.weight_decay)
+    trainloader = trainloaders[int(cid)]
+    valloader = valloaders[int(cid)]
+    return EchoClient(model = model, trainloader=trainloader, valloader=valloader, optim = optim)
+
+if __name__ == "__main__":  #Reminder in case you're feeling especially dense - these arguments all have global scope anyway
     parser = ArgumentParser(
         prog="segmentation",
         description="Echonet-dynamic segmentation",
     )
 
     parser.add_argument("--data-dir", type=Path, default=None)
+    # parser.add_argument("--num_clients", type=int, default=2) ##YOU MAY NEED TO COMMENT THIS OUT TO BE ABLE TO RUN THIS PROPERLY IN ITS OWN RIGHT
     parser.add_argument("--output", type=Path, default=None)
     parser.add_argument("--model-name", choices=sorted(name for name in torchvision.models.segmentation.__dict__ if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name])), default="deeplabv3_resnet50")
 
@@ -570,5 +629,8 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     args_dict = dict(args._get_kwargs())
+
+    trainloaders, valloaders = configure_dataloaders(args.data_dir, args.batch_size)
+
     print(f"Running with args: {args_dict}")
     run(**args_dict)
