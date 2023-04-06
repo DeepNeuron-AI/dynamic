@@ -228,7 +228,10 @@ def run(
                 f.write("{} dice (small):   {:.4f} ({:.4f} - {:.4f})\n".format(split, *echonet.utils.bootstrap(small_inter, small_union, echonet.utils.dice_similarity_coefficient)))
                 f.flush()
 
+    ###### SAVING STEP
+    ###### NEED TO ASK FLOWER DEVS HOW TO SORT THIS
     # Saving videos with segmentations
+
     dataset = echonet.datasets.Echo(root=data_dir, split="test",
                                     target_type=["Filename", "LargeIndex", "SmallIndex"],  # Need filename for saving, and human-selected frames to annotate
                                     mean=mean, std=std,  # Normalization
@@ -494,6 +497,7 @@ def _video_collate_fn(x):
 
     return video, target, i
 
+
 def get_parameters(model):
     return [val.cpu().numpy() for _, val in model.state_dict().items()]
 
@@ -501,8 +505,6 @@ def set_parameters(model, parameters):
     params = zip(model.state_dict().keys(), parameters)
     state_dict = OrderedDict({k: torch.Tensor(v) for k, v in params})
     model.load_state_dict(state_dict, strict=True)
-
-#TODO HERE: set up trainloaders and valloaders outside run function definition just due to the way this works - might be a question of a fresh script??
 
 def configure_dataloaders(data_dir = None, num_clients = 2, batch_size=20, num_workers=4,pin_memory=True):
     mean, std = echonet.utils.get_mean_and_std(echonet.datasets.Echo(root=data_dir, split="train"))
@@ -544,6 +546,7 @@ def configure_dataloaders(data_dir = None, num_clients = 2, batch_size=20, num_w
         valloaders.append(valloader)
     return trainloaders, valloaders
 
+#TODO: declare strategy, declare server, define loss function. Then should be good to get into the tests!
     
 class EchoClient(fl.client.NumPyClient):
     def __init__(self, client_id, model, trainloader, valloader, optim) -> None:
@@ -554,17 +557,17 @@ class EchoClient(fl.client.NumPyClient):
         self.valloader = valloader
         self.optim = optim
     
-    def get_parameters(self, config: Dict[str, Scalar]) -> NDArrays:
+    def get_parameters(self, config):
         return get_parameters(self.model)
 
-    def fit(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[NDArrays, int, Dict[str, Scalar]]:
+    def fit(self, parameters, config) -> Tuple:
         set_parameters(self.model, parameters)
-        with open(os.path.join(output, "log.csv"), "a") as f:
-            loss, large_inter, large_union, small_inter, small_union = echonet.utils.segmentation.run_epoch(self.model, self.dataloader, True, self.optim, args.device)
+        with open(os.path.join(args.output, "{}_log.csv".format(self.client_id)), "a") as f:
+            loss, large_inter, large_union, small_inter, small_union = echonet.utils.segmentation.run_epoch(self.model, self.dataloader, True, self.optim, device)
             overall_dice = 2 * (large_inter.sum() + small_inter.sum()) / (large_union.sum() + large_inter.sum() + small_union.sum() + small_inter.sum())
             large_dice = 2 * large_inter.sum() / (large_union.sum() + large_inter.sum())
             small_dice = 2 * small_inter.sum() / (small_union.sum() + small_inter.sum())
-            f.write("{},{},{},{},{},{},{},{},{},{},{}\n".format(loss,
+            f.write("Training: {},{},{},{},{},{},{},{},{},{},{}\n".format(loss,
                                                                 overall_dice,
                                                                 large_dice,
                                                                 small_dice,
@@ -575,13 +578,12 @@ class EchoClient(fl.client.NumPyClient):
             f.flush()
             return self.get_parameters(self.net), loss
     
-    def evaluate(self, parameters: NDArrays, config: Dict[str, Scalar]) -> Tuple[float, int, Dict[str, Scalar]]:
-        loss,_,_,_,_ = run_epoch(self.model, dataloader = self.dataloader, optim = self.optim, train=False)
+    def evaluate(self, parameters, config):
+        loss,_,_,_,_ = run_epoch(self.model, dataloader = self.dataloader, optim = self.optim, train=False, device=device)
         return super().evaluate(parameters, config) # unsure what the evaluate model should really be looking like here
 
 
 def client_fn(cid) -> EchoClient:
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = torchvision.models.segmentation.__dict__["deeplabv3_resnet50"](pretrained=False, aux_loss=False)
     model.classifier[-1] = torch.nn.Conv2d(model.classifier[-1].in_channels, 1, kernel_size=model.classifier[-1].kernel_size)  # change number of outputs to 1
     if device.type == "cuda":
@@ -599,8 +601,8 @@ if __name__ == "__main__":  #Reminder in case you're feeling especially dense - 
     )
 
     parser.add_argument("--data-dir", type=Path, default=None)
-    # parser.add_argument("--num_clients", type=int, default=2) ##YOU MAY NEED TO COMMENT THIS OUT TO BE ABLE TO RUN THIS PROPERLY IN ITS OWN RIGHT
-    parser.add_argument("--output", type=Path, default=None)
+    parser.add_argument("--num_clients", type=int, default=2) ##YOU MAY NEED TO COMMENT THIS OUT TO BE ABLE TO RUN THIS PROPERLY IN ITS OWN RIGHT
+    parser.add_argument("--output", type=Path, default="logs")  #TODO: think of a good default output directory
     parser.add_argument("--model-name", choices=sorted(name for name in torchvision.models.segmentation.__dict__ if name.islower() and not name.startswith("__") and callable(torchvision.models.segmentation.__dict__[name])), default="deeplabv3_resnet50")
 
     pretrained_group = parser.add_mutually_exclusive_group()
@@ -624,7 +626,8 @@ if __name__ == "__main__":  #Reminder in case you're feeling especially dense - 
     parser.add_argument("--num-train-patients", type=int, default=None)
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--batch-size", type=int, default=20)
-    parser.add_argument("--device", type=str, default=None)
+    #parser.add_argument("--device", type=str, default=None)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seed", type=int, default=0)
 
     args = parser.parse_args()
@@ -632,5 +635,22 @@ if __name__ == "__main__":  #Reminder in case you're feeling especially dense - 
 
     trainloaders, valloaders = configure_dataloaders(args.data_dir, args.batch_size)
 
-    print(f"Running with args: {args_dict}")
-    run(**args_dict)
+    strategy = fl.server.strategy.FedAvg(
+        fraction_fit = 1.0,
+        fraction_evaluate = 0.5,
+        min_fit_clients = args.num_clients,
+        min_evaluate_clients = args.num_clients//2,
+        min_available_clients = args.num_clients
+       
+    )
+    client_resources = {"num_gpus": 1} # This may need to be later modified
+    fl.simulation.start_simulation(
+        client_fn = client_fn,
+        num_clients = args.num_clients,
+        config = fl.server.ServerConfig(num_rounds = 5),
+        strategy = strategy,
+        client_resources = client_resources,
+    )
+
+    # print(f"Running with args: {args_dict}")
+    # run(**args_dict)
