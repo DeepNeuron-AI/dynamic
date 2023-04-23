@@ -472,6 +472,9 @@ def _video_collate_fn(x):
     """
     video, target = zip(*x)  # Extract the videos and targets
 
+    batch_size = 20
+    frames = [110, 92]
+
     # ``video'' is a tuple of length ``batch_size''
     #   Each element has shape (channels=3, frames, height, width)
     #   height and width are expected to be the same across videos, but
