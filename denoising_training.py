@@ -1,16 +1,22 @@
+from typing import Iterable
 import cv2
 from torch.utils.data import Dataset
 import torch 
 import numpy as np
 from torchvision import transforms
-import os 
+import scipy.ndimage
 import echonet 
 from pathlib import Path
+import dotenv
+import os
+
+dotenv.load_dotenv()
 
 
 def to_tensor(array: np.ndarray):
     return torch.from_numpy(array)
-        
+
+
 def to_float(tensor: torch.Tensor):
     return tensor.float()
 
@@ -31,18 +37,17 @@ class DenoisedDataset(Dataset):
         # Get filepaths for each video
         self.filepaths = list(self.video_directory.iterdir())
 
-        self.transform = transforms.Compose([
-            ConvertColor(), # (frame, height, width)
+        self.transform = transforms.Compose([  # (color, frame, height, width)
+            BGRToGray(), # (frame, height, width)
             Normalize(self.mean, self.std),
             to_tensor
         ])
-        self.noisy_transform = transforms.Compose([ # (color, frame, height, width)
-            Transpose((1, 2, 3, 0)), # (frame,height, width, color)
-            MedianBlur(kernel_size=kernel_size), # (frame,height, width, color)
-            Transpose((3, 0, 1, 2)), # (color, frame, height, width)
-            ConvertColor(), # (frame, height, width)
-            Normalize(self.mean, self.std),
-            to_tensor,
+        self.noisy_transform = transforms.Compose([  # (color, frame, height, width)
+            BGRToGray(),  # (frame, height, width)
+            MedianBlur(kernel_size=(1, kernel_size, kernel_size)),
+            # AverageBlur(kernel_size=(31, 1, 1)), # can average over frames if we want!
+            Normalize(self.mean, self.std), 
+            to_tensor, 
             AddGaussianNoise(std=noise_factor)
         ])
 
@@ -81,7 +86,7 @@ class Transpose:
         return array.transpose(self.dims)      
 
 
-class ConvertColor:
+class BGRToGray:
     def __call__(self, array: np.ndarray):
         """
         Parameters
@@ -102,35 +107,39 @@ class Normalize:
 
 
 class MedianBlur:
-    def __init__(self, kernel_size: int) -> None:
-        if kernel_size % 2 == 0:
-            raise ValueError(f"Kernel size should be odd integer but was {kernel_size}!")
+    def __init__(self, kernel_size: Iterable[int]) -> None:
+        for i, dim in enumerate(kernel_size):
+            if dim % 2 == 0:
+                raise ValueError(f"Kernel size should be odd integer but was {dim} along dimension {i}")
 
         self.kernel_size = kernel_size
 
     def __call__(self, array: np.ndarray) -> np.ndarray:
-        result = np.zeros(array.shape, dtype=array.dtype)
-        for i, frame in enumerate(array):
-            print(i)
-            result[i] = cv2.medianBlur(frame, self.kernel_size)
-        return result
-        
+        return scipy.ndimage.median_filter(array, size=self.kernel_size)
+    
 
+class AverageBlur:
+    def __init__(self, kernel_size: Iterable[int]) -> None:
+        for i, dim in enumerate(kernel_size):
+            if dim % 2 == 0:
+                raise ValueError(f"Kernel size should be odd integer but was {dim} along dimension {i}")
+
+        self.ave_filter = np.ones(kernel_size) / np.prod(kernel_size)
+
+    def __call__(self, array: np.ndarray) -> np.ndarray:
+        return scipy.ndimage.convolve(array, self.ave_filter)
 
 
 if __name__ == "__main__":
-    directory = r"C:\Users\Allis\Documents\MDN\Ultrasound2023\dynamic\a4c-video-dir"
-    dataset = DenoisedDataset(directory, noise_factor=0.1)
+    directory = os.environ.get("ECHONET_DIR", "a4c-video-dir")
+    dataset = DenoisedDataset(directory, kernel_size=11, noise_factor=0.25)
     noisy_video, video = dataset[1000]
     noisy_video = noisy_video.numpy()
     video = video.numpy()
 
     mean, std = dataset.mean, dataset.std
-    print(((video * std + mean) < 0).sum())
     video = (video * std + mean).astype(np.uint8)
-    # video = video.transpose((0, 3, 1, 2)) 
 
-    print(((noisy_video * std + mean) < 0).sum())
     noisy_video = noisy_video * std + mean
     noisy_video = np.clip(noisy_video, 0, 255)
     noisy_video = noisy_video.astype(np.uint8)
@@ -147,7 +156,7 @@ if __name__ == "__main__":
         cv2.imshow("Original", video[i])
         cv2.imshow("Noisy", noisy_video[i])
 
-        keypress = cv2.waitKey(50) & 0xFF
+        keypress = cv2.waitKey(20) & 0xFF
         if keypress == ord('q'):
             break
         elif keypress == ord(' '):
@@ -155,10 +164,3 @@ if __name__ == "__main__":
         else:
             if is_playing:
                 i += 1
-
-    """
-    mean = 30, std= 50
-    Starts: (0, 0, 0)
-    Normalise: (-0.6, -0.6, -0.6)
-    Normalise: (-0.05, 0, 0) -> (255, 0, 0)
-    """
