@@ -21,6 +21,21 @@ def to_float(tensor: torch.Tensor):
     return tensor.float()
 
 
+def brighten_dark_areas(array: np.ndarray) -> np.ndarray:
+    array = 255 * 0.5 * ((array/255)**2 + 1)
+    array = array.astype(np.uint8)
+    array = np.clip(array, 0, 255)
+    return array
+    
+def add_contrast(array: np.ndarray) -> np.ndarray:
+    alpha = 0.3
+    beta = 50
+    array = alpha * array + beta
+    array = array.astype(np.uint8)
+    array = np.clip(array, 0, 255)
+    return array
+
+
 class DenoisedDataset(Dataset):
 
     def __init__(self, directory: str, noise_factor: float = 0.05, kernel_size: int = 11):
@@ -44,11 +59,13 @@ class DenoisedDataset(Dataset):
         ])
         self.noisy_transform = transforms.Compose([  # (color, frame, height, width)
             BGRToGray(),  # (frame, height, width)
+            # brighten_dark_areas,
+            add_contrast,
             MedianBlur(kernel_size=(1, kernel_size, kernel_size)),
             # AverageBlur(kernel_size=(31, 1, 1)), # can average over frames if we want!
             Normalize(self.mean, self.std), 
             to_tensor, 
-            AddGaussianNoise(std=noise_factor)
+            # AddGaussianNoise(std=noise_factor)
         ])
 
     def __getitem__(self, index):
@@ -146,12 +163,16 @@ if __name__ == "__main__":
     
     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
     cv2.namedWindow("Noisy", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("Threshold", cv2.WINDOW_NORMAL)
 
     i = 0
     is_playing = True
     while True:
         if i >= len(video):
             i = 0
+
+        frame, thresh = cv2.threshold(video[i],0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        cv2.imshow("Threshold", frame)
 
         cv2.imshow("Original", video[i])
         cv2.imshow("Noisy", noisy_video[i])
