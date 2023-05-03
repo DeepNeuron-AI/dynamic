@@ -60,12 +60,12 @@ class DenoisedDataset(Dataset):
         self.noisy_transform = transforms.Compose([  # (color, frame, height, width)
             BGRToGray(),  # (frame, height, width)
             # brighten_dark_areas,
-            add_contrast,
-            MedianBlur(kernel_size=(1, kernel_size, kernel_size)),
+            # add_contrast,
+            # MedianBlur(kernel_size=(1, kernel_size, kernel_size)),
             # AverageBlur(kernel_size=(31, 1, 1)), # can average over frames if we want!
             Normalize(self.mean, self.std), 
             to_tensor, 
-            # AddGaussianNoise(std=noise_factor)
+            AddGaussianNoise(std=noise_factor, p=0.1 )
         ])
 
     def __getitem__(self, index):
@@ -84,15 +84,16 @@ class AddGaussianNoise(object):
     '''
     from https://discuss.pytorch.org/t/how-to-add-noise-to-mnist-dataset-when-using-pytorch/59745 
     '''
-    def __init__(self, mean=0., std=1.):
+    def __init__(self, mean=0., std=1., p=1):
         self.std = std
         self.mean = mean
+        self.p = p 
         
     def __call__(self, tensor):
-        return tensor + torch.randn(tensor.size()) * self.std + self.mean
+        return tensor + (torch.randn(tensor.size()) * self.std + self.mean)*self.p 
     
     def __repr__(self):
-        return self.__class__.__name__ + '(mean={0}, std={1})'.format(self.mean, self.std)
+        return self.__class__.__name__ + '(mean={0}, std={1}, p={2})'.format(self.mean, self.std, self.p)
 
 
 class Transpose:
@@ -164,6 +165,8 @@ if __name__ == "__main__":
     cv2.namedWindow("Original", cv2.WINDOW_NORMAL)
     cv2.namedWindow("Noisy", cv2.WINDOW_NORMAL)
     cv2.namedWindow("Threshold", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("Sure fg", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("Watershed", cv2.WINDOW_NORMAL)
 
     i = 0
     is_playing = True
@@ -171,10 +174,37 @@ if __name__ == "__main__":
         if i >= len(video):
             i = 0
 
-        frame, thresh = cv2.threshold(video[i],0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
-        cv2.imshow("Threshold", frame)
+        frame = video[i]
+        cv2.imshow("Original", frame)
 
-        cv2.imshow("Original", video[i])
+        _, thresh = cv2.threshold(video[i],0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+        # noise removal
+        kernel = np.ones((3,3),np.uint8)
+        opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 2)
+        # sure background area
+        sure_bg = cv2.dilate(opening,kernel,iterations=3)
+        # Finding sure foreground area
+        dist_transform = cv2.distanceTransform(opening,cv2.DIST_L2,5)
+        ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
+        # Finding unknown region
+        sure_fg = np.uint8(sure_fg)
+        unknown = cv2.subtract(sure_bg,sure_fg)
+
+        # Marker labelling
+        ret, markers = cv2.connectedComponents(sure_fg)
+        # Add one to all labels so that sure background is not 0, but 1
+        markers = markers+1
+        # Now, mark the region of unknown with zero
+        markers[unknown==255] = 0
+
+        frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+        markers = cv2.watershed(frame,markers)
+        watershed_frame = frame.copy()
+        watershed_frame[markers == -1] = [255,0,0]
+
+        cv2.imshow("Threshold", thresh)
+        cv2.imshow("Sure fg", dist_transform)
+        cv2.imshow("Watershed", watershed_frame)
         cv2.imshow("Noisy", noisy_video[i])
 
         keypress = cv2.waitKey(20) & 0xFF
