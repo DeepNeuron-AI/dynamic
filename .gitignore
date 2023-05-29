@@ -11,6 +11,9 @@ a4c-video-dir/
 output/
 echonet-data/
 
+# Used in frontend to download DICOM files
+downloads/
+
 .ipynb_checkpoints/
 __pycache__/
 *.swp

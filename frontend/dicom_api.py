@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import dotenv
 from googleapiclient import discovery
 import pydicom
@@ -30,6 +31,9 @@ PROJECT_ID = os.environ["GCP_PROJECT_ID"]
 LOCATION = os.environ["DICOM_LOCATION"]
 DATASET_ID = os.environ["DICOM_DATASET_ID"]
 DICOM_STORE_ID = os.environ["DICOM_STORE_ID"]
+
+OUTPUT_DIR = Path("downloads")
+OUTPUT_DIR.mkdir(exist_ok=True)
 
 
 @dataclass(frozen=True)
@@ -157,19 +161,15 @@ def dicomweb_retrieve_instance(
         dicom_store_path, study_uid, series_uid, instance_uid
     )
 
-    file_name = "instance.dcm"
+    output_file = OUTPUT_DIR / f"{instance_uid}.dcm"
 
     # Set the required Accept header on the request
     headers = {"Accept": "application/dicom; transfer-syntax=*"}
     response = session.get(dicomweb_path, headers=headers)
     response.raise_for_status()
 
-    with open(file_name, "wb") as f:
+    with open(output_file, "wb") as f:
         f.write(response.content)
-        print(
-            "Retrieved DICOM instance and saved to {} in current directory".format(
-                file_name
-            )
-        )
+        print(f"Retrieved DICOM instance and saved to {output_file} in current directory")
 
-    return response
+    return output_file, response
