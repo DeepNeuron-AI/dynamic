@@ -68,13 +68,13 @@ def human_readable_instance(instance_dict: dict) -> dict:
         ds.add_new(tag=tag, VR=VR, value=value)
 
     return {
-        "SOPClassUID": ds.SOPClassUID,
-        "SOPInstanceUID": ds.SOPInstanceUID,
-        "SeriesInstanceUID": ds.SeriesInstanceUID,
-        "StudyDate": ds.StudyDate,
-        "StudyID": ds.StudyID,
-        "StudyInstanceUID": ds.StudyInstanceUID,
-        "StudyTime": ds.StudyTime
+        "SOPClassUID": ds.get("SOPClassUID"),
+        "SOPInstanceUID": ds.get("SOPInstanceUID"),
+        "SeriesInstanceUID": ds.get("SeriesInstanceUID"),
+        "StudyDate": ds.get("StudyDate"),
+        "StudyID": ds.get("StudyID"),
+        "StudyInstanceUID": ds.get("StudyInstanceUID"),
+        "StudyTime": ds.get("StudyTime")
     }
 
 
