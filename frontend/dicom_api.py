@@ -43,6 +43,12 @@ class DICOMObjectType:
     STUDIES = "studies"
 
 
+class _GoodResponse:
+    ok: bool = True
+    reason: str = "Ok (MOCK)"
+    status_code: int = 200
+    
+
 def _dicom_dataset_parent(project_id: str, location: str):
     return f"projects/{project_id}/locations/{location}"
 
@@ -129,6 +135,11 @@ def dicomweb_retrieve_instance(
 
     See https://github.com/GoogleCloudPlatform/python-docs-samples/tree/main/healthcare/api-client/v1/dicom
     before running the sample."""
+    output_file = OUTPUT_DIR / f"{instance_uid}.dcm"
+    if output_file.exists():
+        print(f"{output_file} already exists, so not downloading file again")
+        return output_file, _GoodResponse
+
     # Imports Python's built-in "os" module
     import os
 
@@ -160,8 +171,6 @@ def dicomweb_retrieve_instance(
     dicomweb_path = "{}/dicomWeb/studies/{}/series/{}/instances/{}".format(
         dicom_store_path, study_uid, series_uid, instance_uid
     )
-
-    output_file = OUTPUT_DIR / f"{instance_uid}.dcm"
 
     # Set the required Accept header on the request
     headers = {"Accept": "application/dicom; transfer-syntax=*"}
