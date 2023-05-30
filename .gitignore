@@ -1,3 +1,9 @@
+# Be extra safe and prevent credentials from being uploaded to git (who would do that?)
+*.json
+
+*dicoms
+*videos
+
 # For direnv; used to automatically activate conda environment
 .envrc
 # Any virtual environment folder

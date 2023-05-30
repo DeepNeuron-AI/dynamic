@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import re
 import dotenv
 from googleapiclient import discovery
 import pydicom
@@ -7,6 +8,8 @@ from pydicom.tag import Tag
 
 import atexit
 from dataclasses import dataclass
+
+from frontend.dicom_video import convert_dicom_color, vidwrite
 
 dotenv.load_dotenv()
 
@@ -32,8 +35,10 @@ LOCATION = os.environ["DICOM_LOCATION"]
 DATASET_ID = os.environ["DICOM_DATASET_ID"]
 DICOM_STORE_ID = os.environ["DICOM_STORE_ID"]
 
-OUTPUT_DIR = Path("downloads")
-OUTPUT_DIR.mkdir(exist_ok=True)
+DICOM_DIR = Path("frontend/static/dicoms")
+DICOM_DIR.mkdir(exist_ok=True)
+VIDEO_DIR = Path("frontend/static/videos")
+VIDEO_DIR.mkdir(exist_ok=True)
 
 
 @dataclass(frozen=True)
@@ -135,10 +140,16 @@ def dicomweb_retrieve_instance(
 
     See https://github.com/GoogleCloudPlatform/python-docs-samples/tree/main/healthcare/api-client/v1/dicom
     before running the sample."""
-    output_file = OUTPUT_DIR / f"{instance_uid}.dcm"
-    if output_file.exists():
-        print(f"{output_file} already exists, so not downloading file again")
-        return output_file, _GoodResponse
+    dicom_file = DICOM_DIR / f"{instance_uid}.dcm"
+    video_file = VIDEO_DIR / f"{instance_uid}.mp4"
+    
+    # Remove static stuff in front
+    match = re.match(".*/static/(.*)", str(video_file))
+    video_file_without_static = match.group(1)
+
+    if dicom_file.exists():
+        print(f"{dicom_file} already exists, so not downloading file again")
+        return dicom_file, video_file_without_static, _GoodResponse
 
     # Imports Python's built-in "os" module
     import os
@@ -177,8 +188,14 @@ def dicomweb_retrieve_instance(
     response = session.get(dicomweb_path, headers=headers)
     response.raise_for_status()
 
-    with open(output_file, "wb") as f:
+    with open(dicom_file, "wb") as f:
         f.write(response.content)
-        print(f"Retrieved DICOM instance and saved to {output_file} in current directory")
+        print(f"Retrieved DICOM instance and saved to {dicom_file} in current directory")
 
-    return output_file, response
+    # Save video for this dicom file too
+    ds = pydicom.read_file(dicom_file)
+    print("Converting to RGB")
+    video = convert_dicom_color(ds, "RGB")
+    vidwrite(str(video_file), video)
+
+    return dicom_file, video_file_without_static, response

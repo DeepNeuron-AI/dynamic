@@ -25,6 +25,7 @@
             <thead>
                 <tr>
                     <th scope="col">Download</th>
+                    <th scope="col">Open</th>
                     <th scope="col">SOP Class UID</th>
                     <th scope="col">SOP Instance UID</th>
                     <th scope="col">Series Instance UID</th>
@@ -37,7 +38,6 @@
             <tbody>
                 {% for instance in instances %}
                 <tr>
-                    
                     <td id="downloadButton-{{instance.SOPInstanceUID | replace('.', '-')}}" class="text-center">
                         <div class="spinner-border" role="status" style="display: none;">
                             <span class="sr-only">Loading...</span>
@@ -49,6 +49,9 @@
                             </svg>
                             Download
                         </button>
+                    </td>
+                    <td>
+                        <a href="{{instance.formUrl}}" class="btn btn-primary">Open form</a>
                     </td>
                     <td>{{instance.SOPClassUID}}</td>
                     <td>{{instance.SOPInstanceUID}}</td>

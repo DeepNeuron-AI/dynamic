@@ -17,3 +17,10 @@ async function retrieveDICOMFile(studyUID, seriesUID, instanceUID) {
 
     console.log(jsonData);
 }
+
+// function getLinkToForm(studyUID, seriesUID, instanceUID) {
+//     studyUIDEncoded = studyUID.replaceAll(".", "-");
+//     seriesUIDEncoded = seriesUID.replaceAll(".", "-");
+//     instanceUIDEncoded = instanceUID.replaceAll(".", "-");
+//     return `/instances/${studyUIDEncoded}/${seriesUIDEncoded}/${instanceUIDEncoded}`;
+// }
