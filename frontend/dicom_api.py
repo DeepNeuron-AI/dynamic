@@ -143,9 +143,12 @@ def dicomweb_retrieve_instance(
     dicom_file = DICOM_DIR / f"{instance_uid}.dcm"
     video_file = VIDEO_DIR / f"{instance_uid}.mp4"
     
+
     # Remove static stuff in front
-    match = re.match(".*/static/(.*)", str(video_file))
-    video_file_without_static = match.group(1)
+    video_file_without_static = remove_static_prefix(video_file)
+    print(str(video_file_without_static))
+    video_file_without_static = str(video_file_without_static).replace("\\", "/")
+    print(str(video_file_without_static))
 
     if dicom_file.exists():
         print(f"{dicom_file} already exists, so not downloading file again")
@@ -199,3 +202,10 @@ def dicomweb_retrieve_instance(
     vidwrite(str(video_file), video)
 
     return dicom_file, video_file_without_static, response
+
+def remove_static_prefix(filepath: Path):
+    file_parts = filepath.parts
+    static_index = file_parts.index("static")
+    new_file_parts = file_parts[static_index +1:]
+    return Path(*new_file_parts)
+
