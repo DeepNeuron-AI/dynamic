@@ -112,20 +112,51 @@ def list_datasets(project_id: str = PROJECT_ID, location: str = LOCATION):
     return datasets
 
 
-def list_store_contents(project_id: str = PROJECT_ID, location: str = LOCATION, dataset_id: str = DATASET_ID, dicom_store_id: str = DICOM_STORE_ID, contents_type: str = DICOMObjectType.INSTANCES):
-    """Handles the GET requests specified in DICOMweb standard.
-
-    See https://github.com/GoogleCloudPlatform/python-docs-samples/tree/main/healthcare/api-client/v1/dicom
-    before running the sample."""
+def _list_instances_series_studies(project_id: str = PROJECT_ID, location: str = LOCATION, dataset_id: str = DATASET_ID, dicom_store_id: str = DICOM_STORE_ID, contents_type: str = DICOMObjectType.INSTANCES):
+    """Return list of either instances, series, or studies in given DICOM store."""
     parent = _dicom_store_name(project_id, location, dataset_id, dicom_store_id)
-    dicom_web_path = contents_type
     
-    request = SERVICE.projects().locations().datasets().dicomStores().searchForInstances(parent=parent, dicomWebPath=dicom_web_path)
+    if contents_type == DICOMObjectType.STUDIES:
+        request = SERVICE.projects().locations().datasets().dicomStores().searchForStudies(parent=parent, dicomWebPath=contents_type)
+    elif contents_type == DICOMObjectType.SERIES:
+        request = SERVICE.projects().locations().datasets().dicomStores().searchForSeries(parent=parent, dicomWebPath=contents_type)
+    elif contents_type == DICOMObjectType.INSTANCES:
+        request = SERVICE.projects().locations().datasets().dicomStores().searchForInstances(parent=parent, dicomWebPath=contents_type)
+
     request.headers = {"Content-Type": "application/dicom+json; charset=utf-8"}
     response = request.execute()
 
     return response
 
+def list_studies(project_id: str = PROJECT_ID, location: str = LOCATION, dataset_id: str = DATASET_ID, dicom_store_id: str = DICOM_STORE_ID):
+    """Return list of studies in given data store."""
+    return _list_instances_series_studies(
+        project_id=project_id,
+        location=location,
+        dataset_id=dataset_id,
+        dicom_store_id=dicom_store_id,
+        contents_type=DICOMObjectType.STUDIES
+    )
+
+def list_series(project_id: str = PROJECT_ID, location: str = LOCATION, dataset_id: str = DATASET_ID, dicom_store_id: str = DICOM_STORE_ID):
+    """Return list of series in given data store."""
+    return _list_instances_series_studies(
+        project_id=project_id,
+        location=location,
+        dataset_id=dataset_id,
+        dicom_store_id=dicom_store_id,
+        contents_type=DICOMObjectType.SERIES
+    )
+
+def list_instances(project_id: str = PROJECT_ID, location: str = LOCATION, dataset_id: str = DATASET_ID, dicom_store_id: str = DICOM_STORE_ID):
+    """Return list of instances in given DICOM store."""
+    return _list_instances_series_studies(
+        project_id=project_id,
+        location=location,
+        dataset_id=dataset_id,
+        dicom_store_id=dicom_store_id,
+        contents_type=DICOMObjectType.INSTANCES
+    )
 
 def dicomweb_retrieve_instance(
     study_uid: str,
