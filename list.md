@@ -1,8 +1,9 @@
 
 # TO DO ITEMS
-- [ ] remove actual html data in the current html templates by commenting them out and displaying hello worrldd
-- [ ]  deploy the website on google app engine 
+- [x] remove actual html data in the current html templates by commenting them out and displaying hello worrldd
+-  [ ] add those google forms that allow you to write reports into a specific instance.
 - [ ] add authentication so that people have to login 
+- [ ] Await for Norrisa to help fix billing account 
+- [ ]  deploy the website on google app engine  
 - [ ] add website security?
--  [ ] add those google forms that allow you to 
 - [ ] turn the .py stuff into cloud functions that can run on google servers instead of my computer 
