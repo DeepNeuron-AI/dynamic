@@ -1,5 +1,5 @@
 from pathlib import Path
-from flask import Flask, render_template
+from flask import Flask, render_template, request 
 import pydicom
 import frontend.dicom_api as dicom_api
 from frontend.dicom_video import convert_dicom_color, vidwrite
@@ -42,4 +42,7 @@ def instance_form_view(study_uid: str, series_uid: str, instance_uid: str):
     series_uid = series_uid.replace("-", ".")
     instance_uid = instance_uid.replace("-", ".")
     dicom_file, video_file, response = dicom_api.dicomweb_retrieve_instance(study_uid=study_uid, series_uid=series_uid, instance_uid=instance_uid)
+    if request.method == "POST":
+        text = request.form.get("text")
+        return render_template("instance_form_view.html", video_filepath=str(video_file), text=text)
     return render_template("instance_form_view.html", video_filepath=str(video_file))
