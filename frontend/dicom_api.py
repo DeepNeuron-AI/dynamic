@@ -81,7 +81,10 @@ def human_readable_instance(instance_dict: dict) -> dict:
             print(f"WARN: tag {tag} with VR {VR} had no value attribute (dict = {v})")
             continue
         ds.add_new(tag=tag, VR=VR, value=value)
-
+    
+    print("ALLISTER DS STORAGE(iterall):")
+    print(ds.iterall)
+    
     return {
         "SOPClassUID": ds.get("SOPClassUID"),
         "SOPInstanceUID": ds.get("SOPInstanceUID"),
