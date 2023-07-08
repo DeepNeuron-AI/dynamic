@@ -54,13 +54,13 @@ def instance_form_view(study_uid: str, series_uid: str, instance_uid: str):
     instance_uid = instance_uid.replace("-", ".")
     dicom_file, video_file, response = dicom_api.dicomweb_retrieve_instance(study_uid=study_uid, series_uid=series_uid, instance_uid=instance_uid)
     if request.method == "POST":
-        text = request.form['text']
-        comment = Comment(text=text)
+        text = request.form.get('text')
+        comment = Comment(text=text, id=1)
         db.session.add(comment)
         db.session.commit()
-        comments = Comment.query.all()
+        comments = Comment.query.filter_by(id=1).first()
         return render_template("instance_form_view.html", video_filepath=str(video_file), comments=comments)
     return render_template("instance_form_view.html", video_filepath=str(video_file))
-
+ 
 if __name__ == "__main__":
     app.run(debug=True)
