@@ -58,7 +58,7 @@ def instance_form_view(study_uid: str, series_uid: str, instance_uid: str):
         comment = Comment(text=text, id=1)
         db.session.add(comment)
         db.session.commit()
-        comments = Comment.query.filter_by(id=1).first()
+        comments = Comment.query.all()
         return render_template("instance_form_view.html", video_filepath=str(video_file), comments=comments)
     return render_template("instance_form_view.html", video_filepath=str(video_file))
  
