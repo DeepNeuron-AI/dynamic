@@ -3,8 +3,19 @@ from flask import Flask, render_template, request
 import pydicom
 import frontend.dicom_api as dicom_api
 from frontend.dicom_video import convert_dicom_color, vidwrite
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///comments.db'
+db = SQLAlchemy(app)
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    text = db.Column(db.String(500), nullable=False)
+
+with app.app_context():
+    db.create_all()
+
 
 @app.route("/")
 def hello_world():
@@ -43,6 +54,13 @@ def instance_form_view(study_uid: str, series_uid: str, instance_uid: str):
     instance_uid = instance_uid.replace("-", ".")
     dicom_file, video_file, response = dicom_api.dicomweb_retrieve_instance(study_uid=study_uid, series_uid=series_uid, instance_uid=instance_uid)
     if request.method == "POST":
-        text = request.form.get("text")
-        return render_template("instance_form_view.html", video_filepath=str(video_file), text=text)
+        text = request.form['text']
+        comment = Comment(text=text)
+        db.session.add(comment)
+        db.session.commit()
+        comments = Comment.query.all()
+        return render_template("instance_form_view.html", video_filepath=str(video_file), comments=comments)
     return render_template("instance_form_view.html", video_filepath=str(video_file))
+
+if __name__ == "__main__":
+    app.run(debug=True)
