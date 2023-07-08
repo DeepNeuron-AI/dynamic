@@ -36,7 +36,7 @@ def retrieve_instance(study_uid: str, series_uid: str, instance_uid: str):
         "responseStatus": response.status_code,
     }
 
-@app.route("/instances/<string:study_uid>/<string:series_uid>/<string:instance_uid>")
+@app.route("/instances/<string:study_uid>/<string:series_uid>/<string:instance_uid>", methods=["GET", "POST"])
 def instance_form_view(study_uid: str, series_uid: str, instance_uid: str):
     study_uid = study_uid.replace("-", ".")
     series_uid = series_uid.replace("-", ".")
