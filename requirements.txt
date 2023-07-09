@@ -26,3 +26,7 @@ typing-extensions
 --extra-index-url https://download.pytorch.org/whl/cu116
 torch
 torchvision
+flask
+pydicom 
+sqlalchemy
+gunicorn==20.1.0
