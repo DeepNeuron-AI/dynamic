@@ -1,32 +1,37 @@
-certifi
-cycler
-decorator
+# certifi
+# cycler
+# decorator
 #echonet
-imageio
-joblib
-kiwisolver
+# imageio
+# joblib
+# kiwisolver
 matplotlib
-networkx
+# networkx
 numpy
-opencv-python
-pandas
-Pillow
-pyparsing
-python-dateutil
-pytz
-PyWavelets
-scikit-image
-scikit-learn
-scipy
-six
-threadpoolctl
-tifffile
-tqdm
-typing-extensions
---extra-index-url https://download.pytorch.org/whl/cu116
-torch
-torchvision
+# opencv-python
+# pandas
+# Pillow
+# pyparsing
+# python-dateutil
+# pytz
+# PyWavelets
+# scikit-image
+# scikit-learn
+# scipy
+# six
+# threadpoolctl
+# tifffile
+# tqdm
+# typing-extensions
+# --extra-index-url https://download.pytorch.org/whl/cu116
+# torch
+# torchvision
 flask
 pydicom 
 sqlalchemy
 gunicorn==20.1.0
+python-dotenv
+googleapiclient
+atexit
+dataclasses
+ffmpeg
