@@ -28,10 +28,9 @@ numpy
 # torchvision
 flask
 pydicom 
-sqlalchemy
+flask-sqlalchemy
 gunicorn==20.1.0
 python-dotenv
-googleapiclient
-atexit
+google-api-python-client
 dataclasses
 ffmpeg
