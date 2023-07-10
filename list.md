@@ -6,16 +6,20 @@
 - [x] using this for loop given by chat is decent but only displays first few rows, now we just need to have it all be displayed. I need to change the logic so that it displays all the comments immediately which will require a separate python function connected to the database to do this. And then basically whenever we get a POST method, it will reupdate this table to showcase the new comment as well, ie. to add the comment and then simply reload the database. 
 - [x] have these instance form views remember the comments that were left on that page. Allow it to have these comments reloaded each time that the instance is opened up. I assume this will require a more complex database backend connection that displays these comments each time that specific instance is opened. 
 - [x] activate cloud build api and try running your front end on there.
-- [ ] activate cloud run (the containerized one) and try migrating your server side python code onto there. 
-- [ ] activate good cloud storage and connect this to your cloud run. look into moving the database and comments into google cloud.
-- [ ] ensure DICOM is connected to the server side 
-- [ ] research how to create authentication and users. Implement this for POC with flask libraries. But we will likely be using google services like embedded google forms and google authentication once Norrisa gives us the greenlight. These will just be a good dev exercise. 
 - [ ] deactivate cloud build once you've done this to save money. 
+- [ ] activate cloud run (the containerized one) and try migrating your server side python code onto there. 
+- [ ] start with this https://cloud.google.com/run/docs/quickstarts/deploy-container
+- [ ] then do this: https://cloud.google.com/run/docs/quickstarts/deploy-continuously#cloudrun_deploy_continuous_code-python
+- [ ] then do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service
+- [ ] connecting cloud run to cloudsql database https://cloud.google.com/run/docs/integrate/connect-to-cloud-sql
+- [ ] activate good cloud storage and connect this to your cloud run. look into moving the database and comments into google cloud.
+- [ ] connect cloud run to authentication here: https://cloud.google.com/identity-platform
+- [ ] ensure DICOM is connected to the server side 
 - [ ] look into moving your flask users and accounts into google and combining this with using google accounts for authentication.  
 - [ ] turn the .py stuff into cloud functions that can run on google servers instead of my computer 
 - [ ] Look into embedding google forms vs adding textboxes. 
 -  [ ] add those google forms that allow you to write reports into a specific instance. 
 - [ ] add authentication so that people have to login 
 - [ ] Await for Norrisa to help fix billing account 
-- [ ] add website security?
+- [ ] add website security? such as implementing https and security on google services. 
 - [ ]  deploy the website on google app engine  
