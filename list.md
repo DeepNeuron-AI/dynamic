@@ -4,8 +4,9 @@
 # TO DO ITEMS
 - [x] deactivate cloud build once you've done this to save money. View build details and clean it up here: https://cloud.google.com/build/docs/build-push-docker-image or here: https://console.cloud.google.com/appengine/instances?serviceId=default&project=lofty-helix-382115&versionId=20230710t121838
 - [x] first confirm if your service is a good fit for cloud run because you thought it was for cloud build but it wasn't. https://cloud.google.com/run/docs/fit-for-run
-- [ ] start with this https://cloud.google.com/run/docs/quickstarts/deploy-container
-- [ ] then do this: https://cloud.google.com/run/docs/quickstarts/deploy-continuously#cloudrun_deploy_continuous_code-python
+- [x] start with this https://cloud.google.com/run/docs/quickstarts/deploy-container
+- [ ] new mdnultrasound email has been created 
+- [ ] then do this: https://cloud.google.com/run/docs/quickstarts/deploy-continuously#cloudrun_deploy_continuous_code-python but utilize the tutorial (guide me button)
 - [ ] then do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service
 - [ ] connecting cloud run to cloudsql database https://cloud.google.com/run/docs/integrate/connect-to-cloud-sql
 - [ ] activate good cloud storage and connect this to your cloud run. look into moving the database and comments into google cloud.
