@@ -26,7 +26,7 @@ numpy
 # --extra-index-url https://download.pytorch.org/whl/cu116
 # torch
 # torchvision
-flask
+flask==2.1.0
 pydicom 
 flask-sqlalchemy
 gunicorn==20.1.0

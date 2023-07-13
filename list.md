@@ -7,7 +7,8 @@
 - [x] start with this https://cloud.google.com/run/docs/quickstarts/deploy-container
 - [x] new mdnultrasound email github has been created 
 - [x] then do this: https://cloud.google.com/run/docs/quickstarts/deploy-continuously#cloudrun_deploy_continuous_code-python but utilize the tutorial (guide me button)
-- [ ] then do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service
+- [ ] then do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service atm, this is not working and is deploying from source
+- [ ] connect and deploy cloud run from git instead of from source.
 - [ ] connecting cloud run to cloudsql database https://cloud.google.com/run/docs/integrate/connect-to-cloud-sql
 - [ ] activate good cloud storage and connect this to your cloud run. look into moving the database and comments into google cloud.
 - [ ] connect cloud run to authentication here: https://cloud.google.com/identity-platform
