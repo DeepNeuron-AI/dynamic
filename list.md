@@ -7,9 +7,9 @@
 - [x] start with this https://cloud.google.com/run/docs/quickstarts/deploy-container
 - [x] new mdnultrasound email github has been created 
 - [x] then do this: https://cloud.google.com/run/docs/quickstarts/deploy-continuously#cloudrun_deploy_continuous_code-python but utilize the tutorial (guide me button)
-- [ ] do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service using a test main.py python flask file to see if that is the issue of why your code isn't working 
+- [x] do this https://cloud.google.com/run/docs/quickstarts/build-and-deploy/deploy-python-service using a test main.py python flask file to see if that is the issue of why your code isn't working 
+- [ ] set up the deployment from a github repo instead of from source so that you can iterate and test faster and get the frontend.app.py file working.
 - [ ] try deploying this with your actual frontend.app.py file.
-- [ ] connect and deploy cloud run from git instead of from source.
 - [ ] connecting cloud run to cloudsql database https://cloud.google.com/run/docs/integrate/connect-to-cloud-sql
 - [ ] activate good cloud storage and connect this to your cloud run. look into moving the database and comments into google cloud.
 - [ ] connect cloud run to authentication here: https://cloud.google.com/identity-platform
